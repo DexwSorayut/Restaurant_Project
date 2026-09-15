@@ -2,20 +2,20 @@ PRAGMA foreign_keys = ON;
 
 -- 1. Categories
 CREATE TABLE IF NOT EXISTS categories (
-    category_id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    category_name   TEXT NOT NULL UNIQUE,
-    status          TEXT NOT NULL DEFAULT 'ACTIVE'
+    category_id     INTEGER PRIMARY KEY AUTOINCREMENT,          -- รหัสหมวดหมู่
+    category_name   TEXT NOT NULL UNIQUE,                       -- ชื่อหมวดหมู่
+    status          TEXT NOT NULL DEFAULT 'ACTIVE'              -- สถานะหมวดหมู่ (เปิด/ปิด)
                     CHECK (status IN ('ACTIVE', 'INACTIVE'))
 );
 
 -- 2. Foods
 CREATE TABLE IF NOT EXISTS foods (
-    food_id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    category_id     INTEGER NOT NULL,
-    food_name       TEXT NOT NULL,
-    price           INTEGER NOT NULL CHECK (price >= 0),
-    image           TEXT,
-    status          TEXT NOT NULL DEFAULT 'AVAILABLE'
+    food_id         INTEGER PRIMARY KEY AUTOINCREMENT,          -- รหัสอาหาร
+    category_id     INTEGER NOT NULL,                           
+    food_name       TEXT NOT NULL,                              -- ชื่ออาหาร
+    price           INTEGER NOT NULL CHECK (price >= 0),        -- ราคาอาหาร
+    image           TEXT,                                       -- รูปอาหาร
+    status          TEXT NOT NULL DEFAULT 'AVAILABLE'           -- สถานะอาหาร (มี/หมด)
                     CHECK (status IN ('AVAILABLE', 'UNAVAILABLE')),
 
     FOREIGN KEY (category_id)
@@ -25,20 +25,21 @@ CREATE TABLE IF NOT EXISTS foods (
 
 -- 3. Restaurant tables
 CREATE TABLE IF NOT EXISTS tables (
-    table_id        INTEGER PRIMARY KEY AUTOINCREMENT,
-    table_number    INTEGER NOT NULL UNIQUE,
-    capacity        INTEGER NOT NULL CHECK (capacity > 0),
-    status          TEXT NOT NULL DEFAULT 'AVAILABLE'
+    table_id        INTEGER PRIMARY KEY AUTOINCREMENT,          -- รหัสโต๊ะ
+    table_number    INTEGER NOT NULL UNIQUE,                    -- หมายเลขโต๊ะ
+    capacity        INTEGER NOT NULL CHECK (capacity > 0),      -- ความจุของโต๊ะ
+    status          TEXT NOT NULL DEFAULT 'AVAILABLE'           -- สถานะโต๊ะ (ว่าง/ไม่ว่าง)
                     CHECK (status IN ('AVAILABLE', 'OCCUPIED'))
 );
 
 -- 4. Bills
 CREATE TABLE IF NOT EXISTS bills (
-    bill_id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    table_id        INTEGER NOT NULL,
-    opened_at       TEXT NOT NULL,
-    closed_at       TEXT,
-    status          TEXT NOT NULL DEFAULT 'OPEN'
+    bill_id         INTEGER PRIMARY KEY AUTOINCREMENT,          -- รหัสบิล
+    table_id        INTEGER NOT NULL,                           
+    customer_count  INTEGER NOT NULL CHECK (customer_count > 0),-- จำนวนลูกค้าในโต๊ะ/บิลนั้นๆ
+    opened_at       TEXT NOT NULL,                              -- เวลาเปิดบิล
+    closed_at       TEXT,                                       -- เวลาปิดบิล
+    status          TEXT NOT NULL DEFAULT 'OPEN'                -- สถานะบิล (เปิด/ปิด)
                     CHECK (status IN ('OPEN', 'CLOSED')),
 
     FOREIGN KEY (table_id)
@@ -48,7 +49,7 @@ CREATE TABLE IF NOT EXISTS bills (
 
 -- 5. Order rounds
 CREATE TABLE IF NOT EXISTS order_rounds (
-    round_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    round_id        INTEGER PRIMARY KEY AUTOINCREMENT,          --
     bill_id         INTEGER NOT NULL,
     round_number    INTEGER NOT NULL CHECK (round_number > 0),
     ordered_at      TEXT NOT NULL,

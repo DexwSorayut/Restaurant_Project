@@ -32,27 +32,16 @@ async function loadSchema() {
 }
 
 
-/**
- * สร้าง Database
- *
- * 1. โหลด schema.sql
- * 2. CREATE TABLE
- * 3. CREATE INDEX
- * 4. Seed ข้อมูลเริ่มต้น
- */
 export async function initDB(db) {
-
+    // โหลด schema.sql
     const schema = await loadSchema();
 
-
-    // สร้าง Tables และ Indexes
+    // สร้างตารางทั้งหมด
     await db.execAsync(schema);
-
 
     // เพิ่มข้อมูลเริ่มต้น
     await seedDatabase(db);
 }
-
 
 /**
  * ตรวจสอบว่ามีข้อมูลใน Database แล้วหรือยัง
@@ -124,4 +113,65 @@ export function getOpenBillByTable(
         `,
         [tableId]
     );
+}
+
+export async function getTables(db) {
+    return await db.getAllAsync(`
+        SELECT
+            t.table_id,
+            t.table_number,
+            t.capacity,
+            t.status,
+
+            b.bill_id,
+            b.customer_count,
+            b.opened_at
+
+        FROM tables t
+
+        LEFT JOIN bills b
+            ON t.table_id = b.table_id
+            AND b.status = 'OPEN'
+
+        ORDER BY t.table_number ASC;
+    `);
+}
+
+export async function openTable(
+    db,
+    tableId,
+    customerCount
+) {
+    const openedAt = new Date().toISOString();
+
+    await db.withTransactionAsync(async () => {
+
+        // สร้าง Bill ใหม่สำหรับโต๊ะ
+        await db.runAsync(
+            `
+            INSERT INTO bills (
+                table_id,
+                customer_count,
+                opened_at,
+                status
+            )
+            VALUES (?, ?, ?, 'OPEN')
+            `,
+            [
+                tableId,
+                customerCount,
+                openedAt
+            ]
+        );
+
+        // เปลี่ยนสถานะโต๊ะเป็น OCCUPIED
+        await db.runAsync(
+            `
+            UPDATE tables
+            SET status = 'OCCUPIED'
+            WHERE table_id = ?
+            `,
+            [tableId]
+        );
+    });
 }

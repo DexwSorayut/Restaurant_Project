@@ -1,83 +1,71 @@
-import { StyleSheet, Text, View , Image , FlatList , TouchableOpacity } from 'react-native';
-import { color } from "../theme";
-import { useState } from 'react';
+import { View, Text, Pressable } from "react-native";
+import { styles } from "../styles/tableCardStyles";
 
-const SingerCard = ({ SINGER , isFav , onToggle }) => {
-  return (
-    <View style={styles.card}>
-      <Image source={{ uri: SINGER.uri }} style={styles.Image} />
-        <View style={styles.footer}>
-          <Text style={styles.title}>{SINGER.name}</Text>
-            <TouchableOpacity onPress={() => onToggle(SINGER.id)}>
-              <Text style={[styles.heart, isFav && styles.heartON]}>🩷</Text>
-            </TouchableOpacity>
+const getOpenDuration = (openedAt) => {
+    if (!openedAt) {
+        return "ยังไม่มีการเปิดโต๊ะ";
+    }
+
+    const openedTime = new Date(openedAt);
+    const now = new Date();
+
+    const diffMs = now - openedTime;
+
+    if (diffMs < 0) {
+        return "เพิ่งเปิดโต๊ะ";
+    }
+
+    const totalMinutes = Math.floor(
+        diffMs / (1000 * 60)
+    );
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0) {
+        return `ใช้งานมาแล้ว ${hours} ชม. ${minutes} นาที`;
+    }
+
+    return `ใช้งานมาแล้ว ${minutes} นาที`;
+};
+
+const TableCard = ({ table, onPress }) => {
+    const isOccupied = table.status === "OCCUPIED";
+
+    return (
+        <View style={styles.card}>
+            <View style={styles.info}>
+                <Text style={styles.tableNumber}>
+                    โต๊ะ {table.table_number}
+                </Text>
+
+                <Text style={styles.openTime}>
+                    {getOpenDuration(table.opened_at)}
+                </Text>
+                {isOccupied && (
+                    <Text style={styles.openTime}>
+                        จำนวนลูกค้า {table.customer_count} คน
+                    </Text>
+                )}
+            </View>
+            <Pressable
+                onPress={() => onPress(table)}
+            >
+            <View
+                style={[
+                    styles.status,
+                    isOccupied
+                        ? styles.occupied
+                        : styles.available
+                ]}
+            >
+                <Text style={styles.statusText}>
+                    {isOccupied ? "ไม่ว่าง" : "เปิดโต๊ะ"}
+                </Text>
+            </View>
+        </Pressable>
         </View>
-    </View>
-  )
-}
+    );
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fecbcb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  TextTitle: {
-    paddingTop: 60,
-    fontSize: 24,
-    fontWeight: 'bold',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  list: {
-    padding: 14,
-  },
-  row: {
-    justifyContent:'space-between'
-  },
-  card: {
-    width:'48%',
-     marginBottom:16,
-     backgroundColor: color.surface,
-     borderWidth: 1,
-     borderColor: color.border,
-     borderRadius: 12,
-     overflow:'hidden'
-  },
-  Image:{
-    width:"100%",
-    aspectRatio:1,
-    objectPosition: 'Top',
-    borderRadius: 12,
-  },
-  footer:{
-    flexDirection:'row',
-    alignItems:'center',
-    justifyContent:'space-between',
-    paddingVertical:14,
-    paddingHorizontal:8,
-  },
-  title:{
-    flex: 1,
-    color: color.text,
-    fontSize: 18,
-    marginRight: 8,
-    fontWeight: 900
-
-  },
-  heart:{
-    fontSize: 17,
-    color: color.muted,
-    opacity: 0.3
-  },
-  heartON: {
-    fontSize: 17,
-    fontWeight: 900,
-    color: color.heart,
-    opacity: 1
-  }
-
-});
-
-export default SingerCard
+export default TableCard;

@@ -7,10 +7,14 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.bg
   },
   header: { 
+    flexDirection: 'row',
+    width: '100%',
     paddingHorizontal: 16 , 
     paddingBottom: 14 , 
     borderBottomColor: colors.border , 
-    borderWidth: 1
+    borderWidth: 1 ,
+    alignItems: 'center',
+    justifyContent: 'space-between' ,
   },
   title: { 
     color: colors.text2 , 
@@ -21,6 +25,7 @@ export const styles = StyleSheet.create({
     flex: 1
   },
   tabbar: { 
+    height: 60,
     flexDirection: 'row' , 
     borderBottomWidth: 1 , 
     borderBottomColor: colors.border , 
@@ -39,6 +44,18 @@ export const styles = StyleSheet.create({
   tabActive: { 
     color: colors.red ,
   },
+  settingsButton: {
+    marginLeft: 'auto',
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+},
+
+settingsIcon: {
+    color: colors.text2,
+    fontSize: 24,
+    fontWeight: 'bold',
+},
 });
 
   
