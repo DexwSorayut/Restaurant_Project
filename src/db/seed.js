@@ -11,7 +11,7 @@ const FOODS = [
     // =========================================
     // อาหารจานเดียว
     // =========================================
-    ['ข้าวกะเพราไก่', 'อาหารจานเดียว', 6500],
+    ['ข้าวกะเพราไก่', 'อาหารจานเดียว', 6500 , 'https://s359.kapook.com/pagebuilder/7595f0f5-696a-4cfe-ad3a-9cd4dd3ccbf8.jpg'],
     ['ข้าวกะเพราหมู', 'อาหารจานเดียว', 6500],
     ['ข้าวผัดไก่', 'อาหารจานเดียว', 6000],
     ['ข้าวผัดหมู', 'อาหารจานเดียว', 6000],
@@ -123,7 +123,7 @@ export async function seedDatabase(db) {
         // =========================================
         // Insert Foods
         // =========================================
-        for (const [foodName, categoryName, price] of FOODS) {
+        for (const [foodName, categoryName, price, image] of FOODS) {
 
             const categoryId =
                 categoryIds.get(categoryName);
@@ -135,14 +135,16 @@ export async function seedDatabase(db) {
                     category_id,
                     food_name,
                     price,
+                    image,
                     status
                 )
-                VALUES (?, ?, ?, 'AVAILABLE')
+                VALUES (?, ?, ?, ?, 'AVAILABLE')
                 `,
                 [
                     categoryId,
                     foodName,
-                    price
+                    price,
+                    image
                 ]
             );
         }

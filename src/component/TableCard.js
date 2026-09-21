@@ -32,39 +32,72 @@ const getOpenDuration = (openedAt) => {
 const TableCard = ({ table, onPress }) => {
     const isOccupied = table.status === "OCCUPIED";
 
-    return (
-        <View style={styles.card}>
-            <View style={styles.info}>
-                <Text style={styles.tableNumber}>
-                    โต๊ะ {table.table_number}
-                </Text>
+    // โต๊ะว่าง
+    // กดได้เฉพาะปุ่ม "เปิดโต๊ะ"
+    if (!isOccupied) {
+        return (
+            <View style={styles.card}>
+                <View style={styles.info}>
+                    <Text style={styles.tableNumber}>
+                        โต๊ะ {table.table_number}
+                    </Text>
+                    <Text style={styles.openTime}>
+                        {getOpenDuration(table.opened_at)}
+                    </Text>
 
-                <Text style={styles.openTime}>
-                    {getOpenDuration(table.opened_at)}
-                </Text>
-                {isOccupied && (
+                </View>
+
+                <Pressable
+                    onPress={() => onPress(table)}
+                >
+                    <View
+                        style={[
+                            styles.status,
+                            styles.available
+                        ]}
+                    >
+                        <Text style={styles.statusText}>
+                            เปิดโต๊ะ
+                        </Text>
+                    </View>
+                </Pressable>
+            </View>
+        );
+    }
+
+    // โต๊ะไม่ว่าง
+    // กดตรงไหนของ Card ก็ได้
+    return (
+        <Pressable
+            onPress={() => onPress(table)}
+        >
+            <View style={styles.card}>
+                <View style={styles.info}>
+                    <Text style={styles.tableNumber}>
+                        โต๊ะ {table.table_number}
+                    </Text>
+
+                    <Text style={styles.openTime}>
+                        {getOpenDuration(table.opened_at)}
+                    </Text>
+
                     <Text style={styles.openTime}>
                         จำนวนลูกค้า {table.customer_count} คน
                     </Text>
-                )}
-            </View>
-            <Pressable
-                onPress={() => onPress(table)}
-            >
-            <View
-                style={[
-                    styles.status,
-                    isOccupied
-                        ? styles.occupied
-                        : styles.available
-                ]}
-            >
-                <Text style={styles.statusText}>
-                    {isOccupied ? "ไม่ว่าง" : "เปิดโต๊ะ"}
-                </Text>
+                </View>
+
+                <View
+                    style={[
+                        styles.status,
+                        styles.occupied
+                    ]}
+                >
+                    <Text style={styles.statusText}>
+                        ไม่ว่าง
+                    </Text>
+                </View>
             </View>
         </Pressable>
-        </View>
     );
 };
 

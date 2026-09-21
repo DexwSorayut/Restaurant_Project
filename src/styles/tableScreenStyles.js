@@ -1,74 +1,107 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet } from 'react-native';
+import { colors } from './theme';
 
 export const styles = StyleSheet.create({
-
-    // พื้นหลังสีดำโปร่งใสของ Modal
-    modalOverlay: {
+    tableRoot: {
         flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        justifyContent: "center",
-        alignItems: "center",
+        backgroundColor: colors.bg,
     },
-
-    // กล่องหน้าต่างสำหรับเปิดโต๊ะ
-    modalContainer: {
-        width: "80%",
-        backgroundColor: "white",
-        borderRadius: 12,
+    tableHeader: {
+        height: 70,
+        paddingHorizontal: 30,
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    tableHeaderTitle: {
+        color: colors.white,
+        fontSize: 24,
+        fontWeight: '700',
+    },
+    backButton: {
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 8,
+        backgroundColor: colors.primaryLight,
+    },
+    backButtonText: {
+        color: colors.primary,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    tableContent: {
+        flex: 1,
+        paddingHorizontal: 35,
+        paddingTop: 25,
+    },
+    tableList: {
+        paddingBottom: 30,
+    },
+    tableRow: {
+        justifyContent: 'flex-start',
+        gap: 20,
+        marginBottom: 20,
+    },
+    tableCard: {
+        // flex: 1,
+        width: '23.7%',
+        minHeight: 180,
+        borderRadius: 16,
+        borderWidth: 2,
         padding: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-
-    // หัวข้อของ Modal
-    modalTitle: {
-        fontSize: 22,
-        fontWeight: "bold",
-        marginBottom: 10,
+    tableCardAvailable: {
+        backgroundColor: colors.surface,
+        borderColor: colors.green,
     },
-
-    // ข้อความกำกับช่องกรอกจำนวนลูกค้า
-    inputLabel: {
-        marginBottom: 8,
+    tableStatusAvailable: {
+        backgroundColor: colors.greenLight,
     },
-
-    // ช่องกรอกจำนวนลูกค้า
-    customerInput: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 10,
-        fontSize: 18,
+    tableStatusTextAvailable: {
+        color: colors.green,
+    },
+    tableCardOccupied: {
+        backgroundColor: colors.redLight,
+        borderColor: colors.red,
+    },
+    tableStatusOccupied: {
+        backgroundColor: colors.red,
+    },
+    tableStatusTextOccupied: {
+        color: colors.white,
+    },
+    tableNumber: {
+        color: colors.text1,
+        fontSize: 28,
+        fontWeight: '800',
         marginBottom: 15,
     },
-
-    // ข้อความแสดงจำนวนลูกค้าสูงสุดของโต๊ะ
-    capacityText: {
-        marginBottom: 15,
-        color: "#666",
+    tableStatus: {
+        minWidth: 90,
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-
-    // Container ของปุ่ม ยกเลิก / เปิดโต๊ะ
-    buttonContainer: {
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        gap: 10,
+    tableStatusText: {
+        fontSize: 16,
+        fontWeight: '700',
     },
-
-    // ปุ่มยกเลิก
-    cancelButton: {
-        padding: 12,
+    tableCapacity: {
+        color: colors.text3,
+        fontSize: 15,
+        marginTop: 12,
     },
-
-    // ปุ่มเปิดโต๊ะ
-    openButton: {
-        backgroundColor: "#222",
-        padding: 12,
-        borderRadius: 8,
+    tableCustomer: {
+        color: colors.red,
+        fontSize: 15,
+        fontWeight: '600',
+        marginTop: 12,
     },
-
-    // ตัวหนังสือบนปุ่มเปิดโต๊ะ
-    openButtonText: {
-        color: "white",
-        fontWeight: "bold",
-    },
-
 });

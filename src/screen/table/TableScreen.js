@@ -1,199 +1,129 @@
-import { useEffect, useState } from "react";
-import { ScrollView, Modal, View, Text, TextInput, Pressable } from "react-native";
-import { useSQLiteContext } from "expo-sqlite";
-import TableCard from "../../component/TableCard";
-import { getTables, openTable } from "../../db/database";
-import { styles } from "../../styles/tableScreenStyles";
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { getTables } from '../../db/database';
+import { colors } from '../../styles/theme';
+import { styles } from '../../styles/tableScreenStyles';
 
+function formatElapsedTime(openedAt) {
+    if (!openedAt) {
+        return 'ยังไม่เปิดโต๊ะ';
+    }
 
-const TableScreen = () => {
+    const openedTime = new Date(openedAt).getTime();
+    const now = Date.now();
 
-    const db = useSQLiteContext();
+    const elapsed = Math.max(
+        0,
+        Math.floor((now - openedTime) / 1000)
+    );
+
+    const hours = Math.floor(elapsed / 3600);
+    const minutes = Math.floor((elapsed % 3600) / 60);
+    const seconds = elapsed % 60;
+
+    return (
+        `${String(hours).padStart(2, '0')}:` +
+        `${String(minutes).padStart(2, '0')}:` +
+        `${String(seconds).padStart(2, '0')}`
+    );
+}
+
+export default function TableScreen({ db, onBack }) {
 
     const [tables, setTables] = useState([]);
-    const [selectedTable, setSelectedTable] = useState(null);
-    const [customerCount, setCustomerCount] = useState("");
-    const [modalVisible, setModalVisible] = useState(false);
+    const [now, setNow] = useState(Date.now());
 
-    // โหลดข้อมูลจาก Database
-    async function loadTables() {
+    useEffect(() => {
+        loadTables();
+
+        const timer = setInterval(() => {
+            setNow(Date.now());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, []);
+
+    const loadTables = async () => {
         try {
             const data = await getTables(db);
             setTables(data);
         } catch (error) {
             console.error(
-                "โหลดโต๊ะไม่สำเร็จ:",
+                'Load tables error:',
                 error
             );
         }
-    }
+    };
 
-    // โหลดข้อมูลครั้งแรกเมื่อเปิดหน้า
-    useEffect(() => {
-        loadTables();
-    }, [db]);
-
-    // ทำงานเมื่อผู้ใช้กดที่โต๊ะ
     const handleTablePress = (table) => {
-        // ถ้าโต๊ะไม่ว่าง
-        // ในอนาคตสามารถเปลี่ยนเป็นการเข้า Bill เดิมได้
-        if (table.status === "OCCUPIED") {
-            console.log(
-                "เข้าโต๊ะเดิม:",
-                table.table_number
-            );
-            return;
-        }
 
-
-        // เก็บข้อมูลโต๊ะที่เลือก
-        setSelectedTable(table);
-
-        // ล้างค่าจำนวนลูกค้าจากครั้งก่อน
-        setCustomerCount("");
-
-        // แสดงหน้าต่างเปิดโต๊ะ
-        setModalVisible(true);
+        console.log(
+            'เลือกโต๊ะ:',
+            table.table_number
+        );
     };
 
-    // ทำงานเมื่อกดปุ่ม "เปิดโต๊ะ"
-    const handleOpenTable = async () => {
-        // ป้องกันกรณีไม่มีโต๊ะที่เลือก
-        if (!selectedTable) {
-            return;
-        }
+    const renderTable = ({ item }) => {
+        const isOccupied =
+            item.status === 'OCCUPIED';
 
-        // แปลงค่าจำนวนลูกค้าจาก Text เป็น Number
-        const count = Number(customerCount);
+        return (
+            <TouchableOpacity
+                style={[ styles.tableCard, isOccupied ? styles.tableCardOccupied : styles.tableCardAvailable ]}
+                activeOpacity={0.8}
+                onPress={() =>
+                    handleTablePress(item)
+                }
+            >
+                <Text style={styles.tableNumber}>
+                    โต๊ะ {item.table_number}
+                </Text>
 
-        // ตรวจสอบว่ากรอกจำนวนลูกค้าหรือไม่
-        if (!count || count <= 0) {
-            console.log(
-                "กรุณากรอกจำนวนลูกค้า"
-            );
-            return;
-        }
+                <Text style={styles.tableCapacity}>
+                    {formatElapsedTime(item.opened_at)}
+                </Text>
 
-        // ตรวจสอบว่าจำนวนลูกค้าเกินความจุของโต๊ะหรือไม่
-        if (count > selectedTable.capacity) {
-            console.log(
-                `โต๊ะนี้รับได้สูงสุด ${selectedTable.capacity} คน`
-            );
-            return;
-        }
-        try {
-            // สร้าง Bill และเปลี่ยนสถานะโต๊ะเป็น OCCUPIED
-            await openTable(
-                db,
-                selectedTable.table_id,
-                count
-            );
-            // ปิด Modal
-            setModalVisible(false);
+                <View style={[ styles.tableStatus, isOccupied ? styles.tableStatusOccupied : styles.tableStatusAvailable,]}>
+                    <Text style={[ styles.tableStatusText, isOccupied ? styles.tableStatusTextOccupied : styles.tableStatusTextAvailable ]}>
+                        {isOccupied
+                            ? 'มีลูกค้า'
+                            : 'ว่าง'
+                        }
+                    </Text>
+                </View>
 
-            // ล้างโต๊ะที่เลือก
-            setSelectedTable(null);
-
-            // ล้างจำนวนลูกค้า
-            setCustomerCount("");
-
-            // โหลดข้อมูลโต๊ะใหม่
-            // เพื่อให้สถานะโต๊ะเปลี่ยนเป็น "ไม่ว่าง"
-            await loadTables();
-            console.log(
-                `เปิดโต๊ะ ${selectedTable.table_number} จำนวน ${count} คน`
-            );
-        } catch (error) {
-            console.error(
-                "เปิดโต๊ะไม่สำเร็จ:",
-                error
-            );
-
-        }
-
-    };
-
-    // ทำงานเมื่อกดปุ่ม "ยกเลิก"
-    const handleCancel = () => {
-        // ปิด Modal
-        setModalVisible(false);
-
-        // ล้างโต๊ะที่เลือก
-        setSelectedTable(null);
-
-        // ล้างจำนวนลูกค้า
-        setCustomerCount("");
+                {isOccupied ? (
+                    <Text style={styles.tableCustomer}>{item.customer_count} คน </Text>
+                ) : (
+                    <Text style={styles.tableCapacity}>รองรับ {item.capacity} คน</Text>
+                )}
+            </TouchableOpacity>
+        );
     };
 
     return (
-        <>
-            <ScrollView
-                contentContainerStyle={{
-                    padding: 12,
-                    paddingBottom: 30,
-                }}
-            >
-                {tables.map((table) => (
-                    <TableCard
-                        key={table.table_id}
-                        table={table}
-                        onPress={handleTablePress}
-                    />
-                ))}
-            </ScrollView>
-            <Modal
-                visible={modalVisible}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={handleCancel}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>
-                            เปิดโต๊ะ {selectedTable?.table_number}
-                        </Text>
+        <View style={styles.tableRoot}>
+            <View style={[ styles.tableHeader , { backgroundColor: colors.primary}]}>
+                <Text style={styles.tableHeaderTitle}> จัดการโต๊ะ </Text>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={onBack}
+                >
+                    <Text style={styles.backButtonText}>กลับ</Text>
+                </TouchableOpacity>
+            </View>
 
-                        <Text style={styles.inputLabel}>
-                            จำนวนลูกค้า
-                        </Text>
-
-                        <TextInput
-                            value={customerCount}
-                            onChangeText={setCustomerCount}
-                            keyboardType="number-pad"
-                            placeholder="กรอกจำนวนลูกค้า"
-                            style={styles.customerInput}
-                        />
-
-                        <Text style={styles.capacityText}>
-                            รองรับสูงสุด{" "}
-                            {selectedTable?.capacity ?? "-"} คน
-                        </Text>
-
-                        <View style={styles.buttonContainer}>
-
-                            <Pressable
-                                onPress={handleCancel}
-                                style={styles.cancelButton}
-                            >
-                                <Text>ยกเลิก</Text>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={handleOpenTable}
-                                style={styles.openButton}
-                            >
-                                <Text style={styles.openButtonText}>
-                                    เปิดโต๊ะ
-                                </Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-        </>
+            <View style={styles.tableContent}>
+                <FlatList
+                    data={tables}
+                    keyExtractor={item => String(item.table_id)}
+                    renderItem={renderTable}
+                    numColumns={4}
+                    columnWrapperStyle={styles.tableRow}
+                    contentContainerStyle={styles.tableList}
+                    showsVerticalScrollIndicator={false}
+                />
+            </View>
+        </View>
     );
-};
-
-
-export default TableScreen;
+}
