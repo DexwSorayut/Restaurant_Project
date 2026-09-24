@@ -127,4 +127,35 @@ export const styles = StyleSheet.create({
         fontWeight: '700',
         marginTop: 5,
     },
+    cartButton: {
+        marginTop: 'auto',
+        backgroundColor: colors.primary,
+        borderRadius: 10,
+        minHeight: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cartButtonText: {
+        color: colors.white,
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    addFoodButton: {
+        position: 'absolute',
+        right: 10,
+        bottom: 10,
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: colors.green,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    addFoodButtonText: {
+        color: colors.white,
+        fontSize: 28,
+        fontWeight: '500',
+        lineHeight: 30,
+    },
 });

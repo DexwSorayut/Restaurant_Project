@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image } from 'react-native';
-import { listCategories, listFoods } from '../../db/database';
+import { listCategories, listFoods, closeBill } from '../../db/database';
 import { styles } from '../../styles/foodsScreenStyles';
 import { colors, topInset } from '../../styles/theme';
 
-export default function FoodScreen({ db, onBack }) {
+export default function FoodScreen({
+    db,
+    table,
+    onBillClosed,
+}) {
 
     const [categories, setCategories] = useState([]);
     const [foods, setFoods] = useState([]);
@@ -46,8 +50,29 @@ export default function FoodScreen({ db, onBack }) {
         return `${(price / 100).toFixed(2)} บาท`;
     };
 
-    const renderFood = ({ item }) => {
+    const handleCloseBill = async () => {
+        if (!table) {
+            return;
+        }
 
+        try {
+            await closeBill(
+                db,
+                table.bill_id,
+                table.table_id
+            );
+            if (onBillClosed) {
+                onBillClosed();
+            }
+        } catch (error) {
+            console.error(
+                'Close bill error:',
+                error
+            );
+        }
+    };
+
+    const renderFood = ({ item }) => {
         return (
             <TouchableOpacity
                 style={styles.foodCard}
@@ -76,6 +101,20 @@ export default function FoodScreen({ db, onBack }) {
                 <View style={styles.foodInfo}>
                     <Text style={styles.foodName} numberOfLines={2}>{item.food_name}</Text>
                     <Text style={styles.foodPrice}>{formatPrice(item.price)}</Text>
+                    <TouchableOpacity
+                        style={styles.addFoodButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            console.log(
+                                'เพิ่มอาหาร:',
+                                item.food_name
+                            );
+                        }}
+                    >
+                        <Text style={styles.addFoodButtonText}>
+                            +
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </TouchableOpacity>
         );
@@ -86,16 +125,11 @@ export default function FoodScreen({ db, onBack }) {
         <View style={styles.foodRoot}>
             <View style={[styles.foodHeader , { backgroundColor: colors.primary}]}>
                 <Text style={styles.foodHeaderTitle}>
-                    รายการอาหาร
+                    สั่งอาหาร
                 </Text>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={onBack}
-                >
-                    <Text style={styles.backButtonText}>
-                        กลับ
-                    </Text>
-                </TouchableOpacity>
+                <Text style={styles.backButtonText}>
+                    โต๊ะ {table?.table_number}{'  '}
+                </Text>
             </View>
 
             <View style={styles.foodContent}>
@@ -130,6 +164,17 @@ export default function FoodScreen({ db, onBack }) {
                            </Text>
                         </TouchableOpacity>
                     ))}
+                        <TouchableOpacity
+                            style={styles.cartButton}
+                            onPress={() => {
+                                console.log('เปิดรายการในตะกร้า');
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.cartButtonText}>
+                                รายการในตะกร้า
+                            </Text>
+                        </TouchableOpacity>
                 </View>
                 <View style={styles.foodListContainer}>
                     <Text style={styles.foodListTitle}>
