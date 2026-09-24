@@ -4,8 +4,9 @@ import * as SQLite from 'expo-sqlite';
 import { DATABASE_NAME, initDB, } from './src/db/database';
 import { styles } from './src/styles/appStyles'; 
 import { colors } from './src/styles/theme';
-import TableScreen from './src/screen/table/tableScreen';
+import TableScreen from './src/screen/table/TableScreen';
 import FoodScreen from './src/screen/foods/foodScreen';
+import KitchenScreen from './src/screen/kitchen/KitchenScreen';
 
 export default function App() {
 
@@ -70,6 +71,16 @@ export default function App() {
             />
         );
 
+    }
+    if (screen === 'kitchen') {
+        return (
+            <KitchenScreen
+                db={db}
+                onBack={() =>
+                    setScreen('home')
+                }
+            />
+        );
     }
 
     const handleTablePress = () => {
@@ -136,11 +147,11 @@ export default function App() {
                             ดูและจัดการรายการอาหาร
                         </Text>
                     </TouchableOpacity>
-
+                    
                     <TouchableOpacity
                         style={[ styles.menuButton, { backgroundColor: colors.orangeLight }]}
                         activeOpacity={0.8}
-                        onPress={handleKitchenPress}
+                        onPress={() => setScreen('kitchen')}
                     >
                         <Image
                             source={require('./src/icon/kitchen.png')}
