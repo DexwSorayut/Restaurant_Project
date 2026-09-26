@@ -1,0 +1,268 @@
+import { StyleSheet } from 'react-native';
+import { colors, topInset } from './theme';
+
+export const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+        backgroundColor: colors.bg,
+    },
+    header: {
+        paddingTop: topInset + 12,
+        paddingBottom: 16,
+        paddingLeft: 20,
+        paddingHorizontal: 30,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+    },
+    headerTitle: {
+        color: colors.white,
+        fontSize: 24,
+        fontWeight: '700',
+    },
+    backButton: {
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 8,
+        backgroundColor: colors.primaryLight,
+    },
+    backButtonText: {
+        color: colors.primary,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    body: {
+        padding: 25,
+    },
+    dishHead: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        paddingBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        marginBottom: 20,
+    },
+    dishThumb: {
+        width: 72,
+        height: 72,
+        borderRadius: 12,
+        backgroundColor: colors.disabled,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    dishThumbImage: {
+        width: '100%',
+        height: '100%',
+    },
+    dishThumbText: {
+        color: colors.disabledText,
+        fontSize: 12,
+    },
+    dishName: {
+        color: colors.text1,
+        fontSize: 19,
+        fontWeight: '700',
+        marginBottom: 4,
+    },
+    dishUnitPrice: {
+        color: colors.text3,
+        fontSize: 14,
+    },
+    fieldLabel: {
+        color: colors.text2,
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 8,
+        marginTop: 8,
+    },
+    noteInput: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 10,
+        padding: 12,
+        minHeight: 90,
+        fontSize: 15,
+        color: colors.text1,
+        backgroundColor: colors.surface,
+        textAlignVertical: 'top',
+    },
+    qtyRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 20,
+        marginTop: 10,
+    },
+    qtyBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    qtyBtnText: {
+        color: colors.primary,
+        fontSize: 20,
+        fontWeight: '700',
+    },
+    qtyNum: {
+        minWidth: 30,
+        textAlign: 'center',
+        fontSize: 19,
+        fontWeight: '700',
+        color: colors.text1,
+    },
+    footer: {
+        padding: 20,
+        paddingBottom: 30,
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    totalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 14,
+    },
+    totalLabel: {
+        color: colors.text2,
+        fontSize: 16,
+    },
+    totalValue: {
+        color: colors.text1,
+        fontSize: 20,
+        fontWeight: '700',
+    },
+    primaryButton: {
+        backgroundColor: colors.primary,
+        borderRadius: 12,
+        paddingVertical: 15,
+        alignItems: 'center',
+    },
+    primaryButtonText: {
+        color: colors.white,
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(31,41,55,0.5)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+    },
+    modalCard: {
+        width: '100%',
+        maxWidth: 320,
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        padding: 22,
+    },
+    modalText: {
+        color: colors.text1,
+        fontSize: 15,
+        lineHeight: 22,
+        marginBottom: 18,
+        textAlign: 'center',
+    },
+    modalButtonRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    modalButton: {
+        flex: 1,
+        borderRadius: 10,
+        paddingVertical: 12,
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: colors.primary,
+    },
+    modalButtonYes: {
+        backgroundColor: colors.primary,
+    },
+    modalButtonText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.primary,
+    },
+    modalButtonTextYes: {
+        color: colors.white,
+    },
+    addonWrap: { 
+        flexDirection: 'row', 
+        flexWrap: 'wrap', 
+        gap: 10, 
+        marginBottom: 12 
+    },
+    addon: {
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        gap: 8,
+        paddingHorizontal: 14, 
+        paddingVertical: 10,
+        borderRadius: 10, 
+        borderWidth: 1, 
+        borderColor: '#D1D5DB', 
+        backgroundColor: '#fff',
+    },
+    addonOn: { 
+        borderColor: '#10B981', 
+        backgroundColor: '#ECFDF5' 
+    },
+    box: { 
+        fontSize: 20 
+    },
+    optionGroupTitle: {
+        color: colors.text2,
+        fontSize: 14,
+        fontWeight: '700',
+        marginTop: 6,
+        marginBottom: 8,
+    },
+
+    optionGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginBottom: 12,
+    },
+
+    optionButton: {
+        width: '15.8%',
+        minHeight: 42,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 14,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        backgroundColor: '#fff',
+    },
+
+    optionButtonOn: {
+        borderColor: '#10B981',
+        backgroundColor: '#ECFDF5',
+    },
+
+    optionBox: {
+        fontSize: 17,
+    },
+
+    optionText: {
+        fontSize: 13,
+        color: colors.text1,
+        fontWeight: '500',
+    },
+
+    optionTextOn: {
+        color: '#059669',
+        fontWeight: '700',
+    },
+
+});

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors } from './theme';
+import { colors, topInset} from './theme';
 
 export const styles = StyleSheet.create({
     tableRoot: {
@@ -7,14 +7,14 @@ export const styles = StyleSheet.create({
         backgroundColor: colors.bg,
     },
     tableHeader: {
-        height: 70,
+        paddingTop: topInset + 12,
+        paddingBottom: 16,
+        paddingLeft: 20,
         paddingHorizontal: 30,
-        backgroundColor: colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
     },
     tableHeaderTitle: {
         color: colors.white,
