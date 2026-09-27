@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, StatusBar, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, Image } from 'react-native';
 import * as SQLite from 'expo-sqlite';
-import { DATABASE_NAME, initDB, } from './src/db/database';
-import { styles } from './src/styles/appStyles'; 
+import { DATABASE_NAME, initDB } from './src/db/database';
+import { CartProvider } from './src/context/cartContext';
+import { styles } from './src/styles/appStyles';
 import { colors } from './src/styles/theme';
-import TableScreen from './src/screen/table/tableScreen';
+import TableScreen from './src/screen/table/TableScreen';
 import FoodScreen from './src/screen/foods/foodScreen';
+import KitchenScreen from './src/screen/kitchen/KitchenScreen';
 
 export default function App() {
 
     const [screen, setScreen] = useState('home');
     const [db, setDb] = useState(null);
     const [ready, setReady] = useState(false);
+    const [selectedTable, setSelectedTable] = useState(null);
 
     useEffect(() => {
         const setupDatabase = async () => {
@@ -20,9 +23,12 @@ export default function App() {
                     await SQLite.openDatabaseAsync(
                         DATABASE_NAME
                     );
+
                 await initDB(database);
+
                 setDb(database);
                 setReady(true);
+
             } catch (error) {
                 console.error(
                     'Database initialization error:',
@@ -30,81 +36,101 @@ export default function App() {
                 );
             }
         };
+
         setupDatabase();
     }, []);
 
     if (!ready || !db) {
         return (
-            <View
-                style={{
-                    flex: 1,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: colors.bg,
-                }}
-            >
-                <Text>
-                    กำลังเตรียมฐานข้อมูล...
-                </Text>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg }}>
+                <Text>กำลังเตรียมฐานข้อมูล...</Text>
             </View>
         );
     }
 
+    return (
+        <CartProvider db={db}>
+            <MainScreen
+                db={db}
+                screen={screen}
+                setScreen={setScreen}
+                selectedTable={selectedTable}
+                setSelectedTable={setSelectedTable}
+            />
+        </CartProvider>
+    );
+}
+
+function MainScreen({
+    db,
+    screen,
+    setScreen,
+    selectedTable,
+    setSelectedTable,
+}) {
     if (screen === 'table') {
         return (
             <TableScreen
                 db={db}
-                onBack={() =>
-                    setScreen('home')
-                }
+                mode="manage"
+                onBack={() => setScreen('home')}
             />
         );
     }
+
+    if (screen === 'selectTable') {
+        return (
+            <TableScreen
+                db={db}
+                mode="select"
+                onBack={() => setScreen('home')}
+                onSelectTable={(table) => {
+                    setSelectedTable(table);
+                    setScreen('food');
+                }}
+            />
+        );
+    }
+
     if (screen === 'food') {
         return (
             <FoodScreen
                 db={db}
-                onBack={() =>
-                    setScreen('home')
-                }
+                table={selectedTable}
+                onBack={() => setScreen('selectTable')}
+                onBillClosed={() => {
+                    setSelectedTable(null);
+                    setScreen('selectTable');
+                }}
             />
         );
-
     }
 
-    const handleTablePress = () => {
-        Alert.alert('โต๊ะ', 'กำลังเข้าสู่หน้าจัดการโต๊ะ');
-    };
-
-    const handleFoodPress = () => {
-        Alert.alert('รายการอาหาร', 'กำลังเข้าสู่รายการอาหาร');
-    };
-
-    const handleKitchenPress = () => {
-        Alert.alert('ครัว', 'ต้องใส่รหัสพนักงานก่อนเข้า');
-    };
+    if (screen === 'kitchen') {
+        return (
+            <KitchenScreen
+                db={db}
+                onBack={() => setScreen('home')}
+            />
+        );
+    }
 
     return (
         <View style={styles.root}>
 
-            <StatusBar
-                backgroundColor={colors.bg}
-                barStyle="dark-content"
-            />
-
+            <StatusBar backgroundColor={colors.bg} barStyle="dark-content" />
             <View style={styles.body}>
                 <View style={styles.brand}>
                     <Image
                         source={require('./src/icon/cashier.png')}
                         style={styles.menuIcon}
                     />
-                    <Text style={styles.shopSubtitle}>
-                        Restaurant POS
-                    </Text>
+                    <Text style={styles.shopSubtitle}>Restaurant POS</Text>
                 </View>
+
                 <View style={styles.menuContainer}>
                     <TouchableOpacity
-                        style={[ styles.menuButton,{ backgroundColor: colors.primary }]}
+                        style={[styles.menuButton, { backgroundColor: colors.primary }]}
                         activeOpacity={0.8}
                         onPress={() => setScreen('table')}
                     >
@@ -112,46 +138,34 @@ export default function App() {
                             source={require('./src/icon/table.png')}
                             style={styles.menuIcon}
                         />
-                        <Text style={styles.menuTitle}>
-                            จัดการโต๊ะ
-                        </Text>
-                        <Text style={styles.menuDescription}>
-                            เปิดโต๊ะ ดูบิล และเช็คบิล
-                        </Text>
+                        <Text style={styles.menuTitle}>จัดการโต๊ะ</Text>
+                        <Text style={styles.menuDescription}>เปิดโต๊ะ ดูบิล และเช็คบิล</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[ styles.menuButton, { backgroundColor: colors.green }]}
+                        style={[styles.menuButton, { backgroundColor: colors.green }]}
                         activeOpacity={0.8}
-                        onPress={() => setScreen('food')}
+                        onPress={() => setScreen('selectTable')}
                     >
                         <Image
                             source={require('./src/icon/foods.png')}
                             style={styles.menuIcon}
                         />
-                        <Text style={styles.menuTitle}>
-                            รายการอาหาร
-                        </Text>
-                        <Text style={styles.menuDescription}>
-                            ดูและจัดการรายการอาหาร
-                        </Text>
+                        <Text style={styles.menuTitle}>สั่งอาหาร</Text>
+                        <Text style={styles.menuDescription}>เลือกโต๊ะและสั่งอาหาร</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[ styles.menuButton, { backgroundColor: colors.orangeLight }]}
+                        style={[styles.menuButton, { backgroundColor: colors.orangeLight }]}
                         activeOpacity={0.8}
-                        onPress={handleKitchenPress}
+                        onPress={() => setScreen('kitchen')}
                     >
                         <Image
                             source={require('./src/icon/kitchen.png')}
                             style={styles.menuIcon}
                         />
-                        <Text style={[ styles.menuTitle, { color: colors.black }]}>
-                            ครัว
-                        </Text>
-                        <Text style={[ styles.menuDescription , { color: colors.black }]}>
-                            จัดการรายการอาหารที่ต้องทำ
-                        </Text>
+                        <Text style={[styles.menuTitle, { color: colors.black }]}>ครัว</Text>
+                        <Text style={[styles.menuDescription, { color: colors.black }]}>จัดการรายการอาหารที่ต้องทำ</Text>
                     </TouchableOpacity>
                 </View>
             </View>

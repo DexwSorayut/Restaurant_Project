@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors } from './theme';
+import { colors, topInset } from './theme';
 
 export const styles = StyleSheet.create({
   root: {
@@ -8,15 +8,14 @@ export const styles = StyleSheet.create({
   },
 
   header: {
-    width: '100%',
-    paddingHorizontal: 40,
-    paddingTop: 24,
-    paddingBottom: 20,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-
-    justifyContent: 'center',
+    paddingTop: topInset + 12,
+    paddingBottom: 16,
+    paddingLeft: 20,
+    paddingHorizontal: 30,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
   },
 
   brand: {
@@ -90,5 +89,4 @@ export const styles = StyleSheet.create({
     marginTop: 10,
     opacity: 0.9,
   },
-
 });
