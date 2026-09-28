@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, Modal, TextInput, Alert } from 'react-native';
-import { listCategories, listFoods, closeBill } from '../../db/database';
+import { listCategories, listFoods } from '../../db/database';
 import { styles } from '../../styles/foodsScreenStyles';
 import { colors } from '../../styles/theme';
 import CartScreen from '../cart/cartScreen';
@@ -10,7 +10,6 @@ export default function FoodScreen({
     db,
     table,
     onBack,
-    onBillClosed,
 }) {
 
     const [categories, setCategories] = useState([]);
@@ -298,7 +297,6 @@ export default function FoodScreen({
                                 ยืนยัน
                             </Text>
                         </TouchableOpacity>
-
                     </View>
                 </View>
             </View>

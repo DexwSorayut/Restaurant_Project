@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { placeOrderRound, payQuickBill, loadOpenQuickBillOrders } from '../db/database';
+import { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import { placeOrderRound } from '../db/database';
 
 const CartContext = createContext(null);
 
@@ -12,34 +12,43 @@ export const itemTotal = it => it.qty * itemUnitPrice(it);
 // แปลงรายการให้ฐานข้อมูลเก็บราคารวมบวกเพิ่ม และจดชื่อบวกเพิ่มไว้ใน note
 const toDbItems = items =>
     items.map(it => {
-        const addonText = (it.addons || []).map(a => `+${a.name}`).join(' ');
-        const note = [addonText, it.note].filter(Boolean).join(' ');
-        return { ...it, note, food: { ...it.food, price: itemUnitPrice(it) } };
+        const addonText = (it.addons || [])
+            .map(a => `+${a.name} x${it.qty}`)
+            .join(' ');
+
+        const note = [addonText, it.note]
+            .filter(Boolean)
+            .join(' ');
+
+        return {
+            ...it,
+            note,
+            food: {
+                ...it.food,
+                price: itemUnitPrice(it)
+            }
+        };
     });
 
-export function CartProvider({ db, children }) {
+export function CartProvider({
+    db,
+    selectedTable,
+    children
+}) {
     const [cart, setCart] = useState([]);
     const [sealedRounds, setSealedRounds] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        if (!db) return;
-        let cancelled = false;
-        (async () => {
-            try {
-                const { rounds } = await loadOpenQuickBillOrders(db);
-                if (!cancelled) setSealedRounds(rounds);
-            } catch (error) {
-                console.error('Load quick bill error:', error);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
-        return () => { cancelled = true; };
-    }, [db]);
 
     const addItem = useCallback((food, qty, note, addons = []) => {
-        setCart(prev => [...prev, { key: `${food.food_id}-${Date.now()}`, food, qty, note, addons }]);
+        setCart(prev => [
+            ...prev,
+            {
+                key: `${food.food_id}-${Date.now()}`,
+                food,
+                qty,
+                note,
+                addons
+            }
+        ]);
     }, []);
 
     const setItemQty = useCallback((location, itemIndex, qty) => {
@@ -58,11 +67,27 @@ export function CartProvider({ db, children }) {
 
     const placeOrder = useCallback(async () => {
         if (cart.length === 0) return false;
-        const { roundId, roundNumber } = await placeOrderRound(db, toDbItems(cart));
-        setSealedRounds(prev => [...prev, { id: roundId, roundNumber, items: cart }]);
+        if (!selectedTable?.bill_id) {
+            console.error('No open bill for selected table');
+            return false;
+        }
+        const { roundId, roundNumber } =
+            await placeOrderRound(
+                db,
+                selectedTable.bill_id,
+                toDbItems(cart)
+            );
+        setSealedRounds(prev => [
+            ...prev,
+            {
+                id: roundId,
+                roundNumber,
+                items: cart
+            }
+        ]);
         setCart([]);
         return true;
-    }, [db, cart]);
+    }, [db, selectedTable, cart]);
 
     const grandTotal = useMemo(
         () => roundSubtotal(cart) + sealedRounds.reduce((sum, r) => sum + roundSubtotal(r.items), 0),
@@ -75,22 +100,43 @@ export function CartProvider({ db, children }) {
     );
 
     const payNow = useCallback(async () => {
-        if (cart.length > 0) {
-            await placeOrderRound(db, toDbItems(cart));
-            setCart([]);
+        if (cart.length === 0) {
+            return 0;
         }
-        const total = await payQuickBill(db);
-        if (total > 0) setSealedRounds([]);
-        return total;
+
+        const { roundId, roundNumber } =
+            await placeOrderRound(
+                db,
+                selectedTable.bill_id,
+                toDbItems(cart)
+            );
+
+        setSealedRounds(prev => [
+            ...prev,
+            {
+                id: roundId,
+                roundNumber,
+                items: cart
+            }
+        ]);
+
+        setCart([]);
+
+        return roundId;
     }, [db, cart]);
 
     const value = {
-        cart, sealedRounds, loading,
-        addItem, setItemQty, removeItem,
-        placeOrder, payNow,
-        grandTotal, totalItemCount, roundSubtotal,
+        cart,
+        sealedRounds,
+        addItem,
+        setItemQty,
+        removeItem,
+        placeOrder,
+        payNow,
+        grandTotal,
+        totalItemCount,
+        roundSubtotal,
     };
-
     return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 

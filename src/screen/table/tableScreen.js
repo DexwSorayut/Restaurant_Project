@@ -33,6 +33,7 @@ export default function TableScreen({
     onBack,
     mode = 'manage',
     onSelectTable,
+    onOpenDetail,
 }) {
 
     const [tables, setTables] = useState([]);
@@ -88,14 +89,12 @@ export default function TableScreen({
         }
 
         if (table.status === 'OCCUPIED') {
+            if (onOpenDetail) {
+                onOpenDetail(table);
+            }
 
-            console.log(
-                'โต๊ะมีลูกค้า:',
-                table.table_number
-            );
             return;
         }
-
         setSelectedTable(table);
         setCustomerCount('');
         setModalVisible(true);

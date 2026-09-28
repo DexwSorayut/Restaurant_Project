@@ -20,7 +20,7 @@ export const styles = StyleSheet.create({
 
   brand: {
     alignItems: 'center',
-    marginBottom: 35,
+    marginBottom: 20,
   },
 
   shopName: {
@@ -46,26 +46,22 @@ export const styles = StyleSheet.create({
   },
 
   menuContainer: {
-    width: '90%',
-    maxWidth: 1100,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
-    alignItems: 'stretch',
-    gap: 24,
+    alignContent: 'center',
+    gap: 20,
+    padding: 20,
   },
 
   menuButton: {
-    flex: 1,
-    minHeight: 260,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.black,
-    paddingHorizontal: 24,
-    paddingVertical: 30,
+    width: '45%',
+    height: 220,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-  },
+    padding: 20,
+  },  
 
   menuIcon: {
     width: 70,

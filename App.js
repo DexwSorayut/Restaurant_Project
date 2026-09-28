@@ -5,9 +5,11 @@ import { DATABASE_NAME, initDB } from './src/db/database';
 import { CartProvider } from './src/context/cartContext';
 import { styles } from './src/styles/appStyles';
 import { colors } from './src/styles/theme';
-import TableScreen from './src/screen/table/TableScreen';
+import TableScreen from './src/screen/table/tableScreen';
 import FoodScreen from './src/screen/foods/foodScreen';
 import KitchenScreen from './src/screen/kitchen/kitchenScreen';
+import DetailScreen from './src/screen/table/detailScreen';
+import SummaryScreen from './src/screen/summary/summaryScreen';
 
 export default function App() {
 
@@ -48,17 +50,20 @@ export default function App() {
         );
     }
 
-    return (
-        <CartProvider db={db}>
-            <MainScreen
-                db={db}
-                screen={screen}
-                setScreen={setScreen}
-                selectedTable={selectedTable}
-                setSelectedTable={setSelectedTable}
-            />
-        </CartProvider>
-    );
+   return (
+    <CartProvider
+        db={db}
+        selectedTable={selectedTable}
+    >
+        <MainScreen
+            db={db}
+            screen={screen}
+            setScreen={setScreen}
+            selectedTable={selectedTable}
+            setSelectedTable={setSelectedTable}
+        />
+    </CartProvider>
+);
 }
 
 function MainScreen({
@@ -74,6 +79,10 @@ function MainScreen({
                 db={db}
                 mode="manage"
                 onBack={() => setScreen('home')}
+                onOpenDetail={(table) => {
+                    setSelectedTable(table);
+                    setScreen('detail');
+                }}
             />
         );
     }
@@ -113,13 +122,23 @@ function MainScreen({
             />
         );
     }
-    if (screen === 'kitchen') {
+    if (screen === 'detail') { 
+        return ( 
+        <DetailScreen 
+            db={db} 
+            table={selectedTable} 
+            onBack={() => setScreen('table')} 
+            onPaid={() => { 
+                setSelectedTable(null); 
+                setScreen('table'); 
+            }} /> 
+        ); 
+    }
+    if (screen === 'summary') {
         return (
-            <KitchenScreen
+            <SummaryScreen
                 db={db}
-                onBack={() =>
-                    setScreen('home')
-                }
+                onBack={() => setScreen('home')}
             />
         );
     }
@@ -164,20 +183,8 @@ function MainScreen({
                         <Text style={styles.menuTitle}>สั่งอาหาร</Text>
                         <Text style={styles.menuDescription}>เลือกโต๊ะและสั่งอาหาร</Text>
                     </TouchableOpacity>
-<<<<<<< Updated upstream
-                    
-                    <TouchableOpacity
-                        style={[
-                            styles.menuButton,
-                            {
-                                backgroundColor:
-                                    colors.orangeLight,
-                            },
-                        ]}
-=======
 
                     <TouchableOpacity style={[ styles.menuButton,{backgroundColor:colors.orangeLight}]}
->>>>>>> Stashed changes
                         activeOpacity={0.8}
                         onPress={() => setScreen('kitchen')}
                     >
@@ -187,6 +194,18 @@ function MainScreen({
                         />
                         <Text style={[ styles.menuTitle,{color:colors.black}]}>ครัว</Text>
                         <Text style={[ styles.menuDescription,{color:colors.black}]}>จัดการรายการอาหารที่ต้องทำ</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[ styles.menuButton,{backgroundColor:colors.indigo}]}
+                        activeOpacity={0.8}
+                        onPress={() => setScreen('summary')}
+                    >
+                        <Image
+                            source={require('./src/icon/report.png')}
+                            style={styles.menuIcon}
+                        />
+                        <Text style={[ styles.menuTitle, {color:colors.black}]}>เอกสาร</Text>
+                        <Text style={[ styles.menuDescription, {color:colors.black}]}>รายงานและบิล</Text>
                     </TouchableOpacity>
                 </View>
             </View>

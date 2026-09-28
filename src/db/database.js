@@ -70,6 +70,7 @@ export function getTables(db) {
             t.status,
 
             b.bill_id,
+            b.bill_number,
             b.customer_count,
             b.opened_at
 
@@ -83,7 +84,6 @@ export function getTables(db) {
     `);
 }
 
-
 /** เปิดโต๊ะ */
 export async function openTable(
     db,
@@ -91,24 +91,40 @@ export async function openTable(
     customerCount
 ) {
     const openedAt = new Date().toISOString();
+
     await db.withTransactionAsync(async () => {
+
+        // หาเลขบิลล่าสุด
+        const lastBill = await db.getFirstAsync(`
+            SELECT
+                COALESCE(MAX(bill_number), 1000) AS last_bill_number
+            FROM bills
+        `);
+
+        const billNumber =
+            Number(lastBill?.last_bill_number ?? 1000) + 1;
+
+        // สร้างบิล
         await db.runAsync(
             `
             INSERT INTO bills (
+                bill_number,
                 table_id,
                 customer_count,
                 opened_at,
                 status
             )
-            VALUES (?, ?, ?, 'OPEN')
+            VALUES (?, ?, ?, ?, 'OPEN')
             `,
             [
+                billNumber,
                 tableId,
                 customerCount,
                 openedAt
             ]
         );
 
+        // เปลี่ยนสถานะโต๊ะ
         await db.runAsync(
             `
             UPDATE tables
@@ -120,7 +136,6 @@ export async function openTable(
     });
 }
 
-
 /** ปิดบิล */
 export async function closeBill(
     db,
@@ -128,18 +143,47 @@ export async function closeBill(
     tableId
 ) {
     const closedAt = new Date().toISOString();
+
     await db.withTransactionAsync(async () => {
+
+        const totalResult = await db.getFirstAsync(
+            `
+            SELECT
+                COALESCE(
+                    SUM(
+                        oi.quantity * oi.unit_price
+                    ),
+                    0
+                ) AS bill_total
+
+            FROM order_rounds AS r
+
+            INNER JOIN order_items AS oi
+                ON oi.round_id = r.round_id
+
+            WHERE r.bill_id = ?
+              AND oi.status != 'CANCELLED'
+            `,
+            [billId]
+        );
+
+        const totalAmount = Number(
+            totalResult?.bill_total ?? 0
+        );
+
         await db.runAsync(
             `
             UPDATE bills
             SET
                 status = 'CLOSED',
-                closed_at = ?
+                closed_at = ?,
+                total_amount = ?
             WHERE bill_id = ?
               AND status = 'OPEN'
             `,
             [
                 closedAt,
+                totalAmount,
                 billId
             ]
         );
@@ -154,7 +198,6 @@ export async function closeBill(
         );
     });
 }
-
 
 /** ดึงรายการอาหารในบิล */
 export async function getBillDetails(
@@ -297,67 +340,12 @@ export function updateOrderItemStatus(
     );
 }
 
-const QUICK_TABLE_NUMBER = 9999;
-
-async function getOrCreateQuickTable(db) {
-    const existing = await db.getFirstAsync(
-        `SELECT table_id FROM tables WHERE table_number = ?`,
-        [QUICK_TABLE_NUMBER]
-    );
-    if (existing) return existing.table_id;
-
-    await db.runAsync(
-        `INSERT INTO tables (table_number, capacity, status) VALUES (?, 1, 'AVAILABLE')`,
-        [QUICK_TABLE_NUMBER]
-    );
-    const created = await db.getFirstAsync(
-        `SELECT table_id FROM tables WHERE table_number = ?`,
-        [QUICK_TABLE_NUMBER]
-    );
-    return created.table_id;
-}
-
-/** หา OPEN bill ของโต๊ะชั่วคราว ถ้ายังไม่มีให้เปิดใหม่ */
-async function getOrOpenQuickBill(db) {
-    const tableId = await getOrCreateQuickTable(db);
-
-    let bill = await db.getFirstAsync(
-        `SELECT bill_id FROM bills WHERE table_id = ? AND status = 'OPEN'`,
-        [tableId]
-    );
-
-    if (!bill) {
-        await openTable(db, tableId, 1);
-        bill = await db.getFirstAsync(
-            `SELECT bill_id FROM bills WHERE table_id = ? AND status = 'OPEN'`,
-            [tableId]
-        );
-    }
-
-    return { billId: bill.bill_id, tableId };
-}
-
-/** หา OPEN bill ของโต๊ะชั่วคราวแบบไม่เปิดใหม่ ใช้ตอนโหลดตะกร้าคืนตอนเปิดแอป */
-async function findOpenQuickBill(db) {
-    const table = await db.getFirstAsync(
-        `SELECT table_id FROM tables WHERE table_number = ?`,
-        [QUICK_TABLE_NUMBER]
-    );
-    if (!table) return null;
-
-    const bill = await db.getFirstAsync(
-        `SELECT bill_id FROM bills WHERE table_id = ? AND status = 'OPEN'`,
-        [table.table_id]
-    );
-    return bill ? { billId: bill.bill_id, tableId: table.table_id } : null;
-}
-
-/**
- * บันทึกรายการที่กด "สั่งอาหาร" เป็น order_round ใหม่ 1 รอบ + order_items ของรอบนั้น
- * cartItems: [{ food: { food_id, price, ... }, qty, note }]
- */
-export async function placeOrderRound(db, cartItems) {
-    const { billId } = await getOrOpenQuickBill(db);
+/** บันทึกรายการที่กด "สั่งอาหาร" */
+export async function placeOrderRound(
+    db,
+    billId,
+    cartItems
+) {
     const orderedAt = new Date().toISOString();
 
     let roundId, roundNumber;
@@ -392,66 +380,338 @@ export async function placeOrderRound(db, cartItems) {
     return { billId, roundId, roundNumber };
 }
 
-/**
- * ปิดบิลชั่วคราว + บันทึกการชำระเงิน
- * คืนยอดที่จ่ายจริง (0 ถ้าไม่มีบิลเปิดอยู่หรือไม่มีรายการให้จ่าย)
- */
-export async function payQuickBill(db, paymentMethod = 'CASH') {
-    const found = await findOpenQuickBill(db);
-    if (!found) return 0;
+export async function getSummary(
+    db,
+    startDateTime,
+    endDateTime
+) {
+    // =========================
+    // ยอดขาย + จำนวนบิล
+    // =========================
+    const salesResult = await db.getFirstAsync(
+        `
+        SELECT
+            COALESCE(
+                SUM(total_amount),
+                0
+            ) AS total_sales,
 
-    const { billId, tableId } = found;
-    const { billTotal } = await getBillDetails(db, billId);
-    if (billTotal === 0) return 0;
+            COUNT(*) AS total_bills
 
-    const paidAt = new Date().toISOString();
+        FROM bills
 
-    await db.runAsync(
-        `INSERT INTO payments (bill_id, amount, payment_method, paid_at) VALUES (?, ?, ?, ?)`,
-        [billId, billTotal, paymentMethod, paidAt]
+        WHERE status = 'CLOSED'
+          AND closed_at >= ?
+          AND closed_at <= ?
+        `,
+        [
+            startDateTime,
+            endDateTime
+        ]
     );
 
-    // closeBill (จาก database.js) จะปิดบิลและคืนสถานะโต๊ะเป็น AVAILABLE ให้ในตัว
-    await closeBill(db, billId, tableId);
 
-    return billTotal;
-}
+    // =========================
+    // จำนวนอาหารทั้งหมด
+    // =========================
+    const itemResult = await db.getFirstAsync(
+        `
+        SELECT
+            COALESCE(
+                SUM(oi.quantity),
+                0
+            ) AS total_items
 
-/**
- * โหลดรายการที่ยืนยันแล้ว (ยังไม่จ่าย) ของบิลชั่วคราว
- * ใช้กู้ตะกร้าคืนตอนเปิดแอปใหม่ ให้หน้าตะกร้ายังเห็นรอบที่สั่งไปก่อนหน้า
- */
-export async function loadOpenQuickBillOrders(db) {
-    const found = await findOpenQuickBill(db);
-    if (!found) return { rounds: [], billId: null };
+        FROM bills AS b
 
-    const { items } = await getBillDetails(db, found.billId);
+        INNER JOIN order_rounds AS r
+            ON r.bill_id = b.bill_id
 
-    const roundMap = new Map();
-    for (const row of items) {
-        if (row.status === 'CANCELLED') continue;
-        if (!roundMap.has(row.round_id)) {
-            roundMap.set(row.round_id, {
-                id: row.round_id,
-                roundNumber: row.round_number,
-                items: [],
-            });
+        INNER JOIN order_items AS oi
+            ON oi.round_id = r.round_id
+
+        WHERE b.status = 'CLOSED'
+          AND b.closed_at >= ?
+          AND b.closed_at <= ?
+          AND oi.status != 'CANCELLED'
+        `,
+        [
+            startDateTime,
+            endDateTime
+        ]
+    );
+
+
+    // =========================
+    // ยอดขายแยกตามอาหาร
+    // =========================
+    const foodResult = await db.getAllAsync(
+        `
+        SELECT
+            f.food_id,
+            f.food_name,
+
+            SUM(oi.quantity) AS quantity,
+
+            SUM(
+                oi.quantity * oi.unit_price
+            ) AS total_amount
+
+        FROM bills AS b
+
+        INNER JOIN order_rounds AS r
+            ON r.bill_id = b.bill_id
+
+        INNER JOIN order_items AS oi
+            ON oi.round_id = r.round_id
+
+        INNER JOIN foods AS f
+            ON f.food_id = oi.food_id
+
+        WHERE b.status = 'CLOSED'
+          AND b.closed_at >= ?
+          AND b.closed_at <= ?
+          AND oi.status != 'CANCELLED'
+
+        GROUP BY
+            f.food_id,
+            f.food_name
+
+        ORDER BY
+            quantity DESC
+        `,
+        [
+            startDateTime,
+            endDateTime
+        ]
+    );
+
+
+    // =========================
+    // ดึง Addon จากรายการอาหาร
+    // =========================
+    const addonResult = await db.getAllAsync(
+        `
+        SELECT
+            f.food_id,
+            oi.item_id,
+            oi.quantity,
+            oi.note
+
+        FROM bills AS b
+
+        INNER JOIN order_rounds AS r
+            ON r.bill_id = b.bill_id
+
+        INNER JOIN order_items AS oi
+            ON oi.round_id = r.round_id
+
+        INNER JOIN foods AS f
+            ON f.food_id = oi.food_id
+
+        WHERE b.status = 'CLOSED'
+          AND b.closed_at >= ?
+          AND b.closed_at <= ?
+          AND oi.status != 'CANCELLED'
+          AND oi.note IS NOT NULL
+        `,
+        [
+            startDateTime,
+            endDateTime
+        ]
+    );
+
+
+    // =========================
+    // รายการ Addon ที่ระบบมี
+    // =========================
+    const addonNames = [
+        'ไข่ดาว',
+        'ข้าวเพิ่ม',
+        'พิเศษ'
+    ];
+
+
+    // =========================
+    // รวม Addon แยกตามอาหาร
+    // =========================
+    const addonMap = {};
+
+    for (const row of addonResult) {
+
+        if (!row.note) {
+            continue;
         }
-        roundMap.get(row.round_id).items.push({
-            key: `db-item-${row.item_id}`,
-            food: {
-                food_id: row.food_id,
-                food_name: row.food_name,
-                price: row.unit_price, // ราคา ณ ตอนสั่ง ไม่ใช่ราคาปัจจุบันของเมนู
-            },
-            qty: row.quantity,
-            note: row.note || '',
-        });
+
+        const foodId = row.food_id;
+
+        if (!addonMap[foodId]) {
+            addonMap[foodId] = {};
+        }
+
+        for (const addonName of addonNames) {
+
+            const regex = new RegExp(
+                `\\+${addonName} x(\\d+)`
+            );
+
+            const match = row.note.match(regex);
+
+            if (!match) {
+                continue;
+            }
+
+            const quantity = Number(
+                match[1]
+            );
+
+            if (!addonMap[foodId][addonName]) {
+                addonMap[foodId][addonName] = 0;
+            }
+
+            addonMap[foodId][addonName] += quantity;
+        }
     }
 
-    const rounds = Array.from(roundMap.values()).sort(
-        (a, b) => a.roundNumber - b.roundNumber
-    );
 
-    return { rounds, billId: found.billId };
+    // =========================
+    // ส่งข้อมูลกลับ
+    // =========================
+    return {
+
+        totalSales: Number(
+            salesResult?.total_sales ?? 0
+        ),
+
+        totalBills: Number(
+            salesResult?.total_bills ?? 0
+        ),
+
+        totalItems: Number(
+            itemResult?.total_items ?? 0
+        ),
+
+        foodSales: foodResult.map(item => {
+
+            const addons =
+                addonMap[item.food_id] || {};
+
+            return {
+
+                foodId: item.food_id,
+
+                foodName: item.food_name,
+
+                quantity: Number(
+                    item.quantity ?? 0
+                ),
+
+                totalAmount: Number(
+                    item.total_amount ?? 0
+                ),
+
+                addons: Object.entries(
+                    addons
+                ).map(
+                    ([name, quantity]) => ({
+                        name,
+                        quantity
+                    })
+                )
+            };
+        })
+    };
+}
+
+export async function listClosedBills(db) {
+    return db.getAllAsync(`
+        SELECT
+            b.bill_id,
+            b.bill_number,
+            b.table_id,
+            t.table_number,
+            b.customer_count,
+            b.opened_at,
+            b.closed_at,
+            b.total_amount,
+            p.payment_method,
+            p.paid_at
+
+        FROM bills AS b
+
+        INNER JOIN tables AS t
+            ON t.table_id = b.table_id
+
+        LEFT JOIN payments AS p
+            ON p.bill_id = b.bill_id
+
+        WHERE b.status = 'CLOSED'
+
+        ORDER BY
+            b.closed_at DESC
+    `);
+}
+
+export async function getClosedBillDetail(db, billId) {
+
+    const bill = await db.getFirstAsync(`
+        SELECT
+            b.bill_id,
+            b.bill_number,
+            b.table_id,
+            t.table_number,
+            b.customer_count,
+            b.opened_at,
+            b.closed_at,
+            b.total_amount,
+            p.payment_method,
+            p.paid_at
+
+        FROM bills AS b
+
+        INNER JOIN tables AS t
+            ON t.table_id = b.table_id
+
+        LEFT JOIN payments AS p
+            ON p.bill_id = b.bill_id
+
+        WHERE b.bill_id = ?
+          AND b.status = 'CLOSED'
+    `, [billId]);
+
+
+    const items = await db.getAllAsync(`
+        SELECT
+            r.round_id,
+            r.round_number,
+            r.ordered_at,
+
+            oi.item_id,
+            oi.food_id,
+            f.food_name,
+            oi.quantity,
+            oi.unit_price,
+            oi.note,
+            oi.status
+
+        FROM order_rounds AS r
+
+        INNER JOIN order_items AS oi
+            ON oi.round_id = r.round_id
+
+        INNER JOIN foods AS f
+            ON f.food_id = oi.food_id
+
+        WHERE r.bill_id = ?
+
+        ORDER BY
+            r.round_number ASC,
+            oi.item_id ASC
+    `, [billId]);
+
+
+    return {
+        bill,
+        items
+    };
 }
