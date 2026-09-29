@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS tables (
 -- 4. Bills
 CREATE TABLE IF NOT EXISTS bills (
     bill_id         INTEGER     PRIMARY KEY     AUTOINCREMENT,
+    bill_number     INTEGER     NOT NULL        UNIQUE,
     table_id        INTEGER     NOT NULL,
     customer_count  INTEGER     NOT NULL
                     CHECK (customer_count > 0),
