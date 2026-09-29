@@ -1,9 +1,16 @@
 import { StyleSheet } from 'react-native';
-import { colors, topInset } from './theme'
+import { colors, topInset } from './theme';
 
 export const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: '#F3F4F6' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: colors.primary },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        paddingTop: topInset + 12,
+        backgroundColor: colors.primary,
+    },
     headerTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
     backBtn: { backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
     backText: { fontWeight: '600', color: colors.primary },
