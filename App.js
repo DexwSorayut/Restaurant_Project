@@ -256,8 +256,8 @@ function MainScreen({
                             source={require('./src/icon/report.png')}
                             style={styles.menuIcon}
                         />
-                        <Text style={[styles.menuTitle, { color: colors.black }]}>เอกสาร</Text>
-                        <Text style={[styles.menuDescription, { color: colors.black }]}>รายงานและบิล</Text>
+                        <Text style={styles.menuTitle}>เอกสาร</Text>
+                        <Text style={styles.menuDescription}>รายงานและบิล</Text>
                     </TouchableOpacity>
                 </View>
             </View>

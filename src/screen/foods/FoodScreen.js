@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Image, TextInput, Modal } from 'react-native';
 import { listCategories, listFoods } from '../../db/database';
 import { styles } from '../../styles/foodsScreenStyles';
 import { colors } from '../../styles/theme';
 import { AddPic } from '../../foodsPic/AddPic';
+
 
 export default function FoodScreen({
     db,
@@ -19,6 +20,8 @@ export default function FoodScreen({
     const [searchText, setSearchText] = useState('');
     const [sortOrder, setSortOrder] = useState(null);
     const [showSortDropdown, setShowSortDropdown] = useState(false);
+    const [pinModalVisible, setPinModalVisible] = useState(false);
+    const [employeePin, setEmployeePin] = useState('');
 
     useEffect(() => {
         loadData();
@@ -51,6 +54,26 @@ export default function FoodScreen({
     } else if (sortOrder === 'desc') {
         filteredFoods = [...filteredFoods].sort((a, b) => b.price - a.price);
     }
+
+    const handleBack = () => {
+        setEmployeePin('');
+        setPinModalVisible(true);
+    };
+    
+    const handleEmployeeLogin = () => {
+        if (employeePin !== '1234') {
+            Alert.alert(
+                'รหัสไม่ถูกต้อง',
+                'กรุณาตรวจสอบรหัสพนักงานอีกครั้ง'
+            );
+            return;
+        }
+        setEmployeePin('');
+        setPinModalVisible(false);
+        if (onBack) {
+            onBack();
+        }
+    };
 
     const formatPrice = (price) => {
         return `${(price / 100).toFixed(2)} บาท`;
@@ -95,6 +118,7 @@ export default function FoodScreen({
     };
 
     return (
+        <>
         <View style={styles.foodRoot}>
             <View style={[styles.foodHeader, { backgroundColor: colors.primary }]}>
                 <View>
@@ -109,7 +133,7 @@ export default function FoodScreen({
                 </View>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={onBack}
+                    onPress={handleBack}
                 >
                     <Text style={styles.backButtonText}>
                         กลับ
@@ -257,5 +281,64 @@ export default function FoodScreen({
                 </View>
             </View>
         </View>
+        <Modal
+            visible={pinModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => {
+                setEmployeePin('');
+                setPinModalVisible(false);
+            }}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.openTableModal}>
+
+                    <Text style={styles.modalTitle}>
+                        ออกจากโต๊ะ
+                    </Text>
+
+                    <Text style={styles.modalDescription}>
+                        กรุณาใส่รหัสพนักงานเพื่อกลับไปเลือกโต๊ะ
+                    </Text>
+
+                    <TextInput
+                        style={styles.customerInput}
+                        value={employeePin}
+                        onChangeText={setEmployeePin}
+                        placeholder="รหัสพนักงาน"
+                        placeholderTextColor={colors.dim}
+                        keyboardType="number-pad"
+                        secureTextEntry
+                        maxLength={6}
+                        autoFocus
+                    />
+
+                    <View style={styles.modalButtons}>
+
+                        <TouchableOpacity
+                            style={styles.modalCancelButton}
+                            onPress={() => {
+                                setEmployeePin('');
+                                setPinModalVisible(false);
+                            }}
+                        >
+                            <Text style={styles.modalCancelText}>
+                                ยกเลิก
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.modalConfirmButton}
+                            onPress={handleEmployeeLogin}
+                        >
+                            <Text style={styles.modalConfirmText}>
+                                ยืนยัน
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    </>
     );
 }
