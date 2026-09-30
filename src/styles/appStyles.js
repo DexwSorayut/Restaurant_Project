@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors } from './theme';
+import { colors, topInset } from './theme';
 
 export const styles = StyleSheet.create({
   root: {
@@ -8,20 +8,19 @@ export const styles = StyleSheet.create({
   },
 
   header: {
-    width: '100%',
-    paddingHorizontal: 40,
-    paddingTop: 24,
-    paddingBottom: 20,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-
-    justifyContent: 'center',
+    paddingTop: topInset + 12,
+    paddingBottom: 16,
+    paddingLeft: 20,
+    paddingHorizontal: 30,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
   },
 
   brand: {
     alignItems: 'center',
-    marginBottom: 35,
+    marginBottom: 20,
   },
 
   shopName: {
@@ -47,26 +46,22 @@ export const styles = StyleSheet.create({
   },
 
   menuContainer: {
-    width: '90%',
-    maxWidth: 1100,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
-    alignItems: 'stretch',
-    gap: 24,
+    alignContent: 'center',
+    gap: 20,
+    padding: 20,
   },
 
   menuButton: {
-    flex: 1,
-    minHeight: 260,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.black,
-    paddingHorizontal: 24,
-    paddingVertical: 30,
+    width: '45%',
+    height: 220,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-  },
+    padding: 20,
+  },  
 
   menuIcon: {
     width: 70,
@@ -90,5 +85,4 @@ export const styles = StyleSheet.create({
     marginTop: 10,
     opacity: 0.9,
   },
-
 });

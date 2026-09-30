@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
-import { getTables } from '../../db/database';
+import { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, FlatList, Alert, TextInput, Modal } from 'react-native';
+import { getTables, openTable } from '../../db/database';
 import { colors } from '../../styles/theme';
 import { styles } from '../../styles/tableScreenStyles';
 
@@ -28,10 +28,26 @@ function formatElapsedTime(openedAt) {
     );
 }
 
-export default function TableScreen({ db, onBack }) {
+export default function TableScreen({
+    db,
+    onBack,
+    mode = 'manage',
+    onSelectTable,
+    onOpenDetail,
+}) {
 
     const [tables, setTables] = useState([]);
     const [now, setNow] = useState(Date.now());
+    const [selectedTable, setSelectedTable] = useState(null);
+    const [customerCount, setCustomerCount] = useState('');
+    const [modalVisible, setModalVisible] = useState(false);
+    const [searchText, setSearchText] = useState('');
+
+    const filteredTables = searchText.trim() === ''
+        ? tables
+        : tables.filter(t =>
+            String(t.table_number).includes(searchText.trim())
+        );
 
     useEffect(() => {
         loadTables();
@@ -55,12 +71,91 @@ export default function TableScreen({ db, onBack }) {
         }
     };
 
-    const handleTablePress = (table) => {
+    const closeModal = () => {
+        setModalVisible(false);
+        setSelectedTable(null);
+        setCustomerCount('');
+    };
 
-        console.log(
-            'เลือกโต๊ะ:',
-            table.table_number
-        );
+    const handleTablePress = (table) => {
+        if (mode === 'select') {
+            if (table.status !== 'OCCUPIED') {
+                Alert.alert(
+                    'โต๊ะยังไม่เปิด',
+                    `กรุณาแจ้งพนักงานให้เปิดโต๊ะ ${table.table_number} ก่อน`
+                );
+
+                return;
+            }
+
+            if (onSelectTable) {
+                onSelectTable(table);
+            }
+
+            return;
+        }
+
+        if (table.status === 'OCCUPIED') {
+            if (onOpenDetail) {
+                onOpenDetail(table);
+            }
+
+            return;
+        }
+        setSelectedTable(table);
+        setCustomerCount('');
+        setModalVisible(true);
+    };
+
+    const handleOpenTable = async () => {
+        if (!selectedTable) {
+            return;
+        }
+
+        const count = Number(customerCount);
+            if (!customerCount.trim()) {
+                Alert.alert(
+                    'ข้อมูลไม่ครบ',
+                    'กรุณากรอกจำนวนลูกค้า'
+                );
+                return;
+            }
+
+            if (!Number.isInteger(count) || count <= 0) {
+                Alert.alert(
+                    'จำนวนลูกค้าไม่ถูกต้อง',
+                    'กรุณากรอกจำนวนลูกค้าเป็นจำนวนเต็มที่มากกว่า 0'
+                );
+                return;
+            }
+
+            if (count > selectedTable.capacity) {
+                Alert.alert(
+                    'จำนวนลูกค้าเกินความจุโต๊ะ',
+                    `โต๊ะ ${selectedTable.table_number} รองรับได้สูงสุด ${selectedTable.capacity} คน`
+                );
+                return;
+            }
+
+            try {
+                await openTable(
+                    db,
+                    selectedTable.table_id,
+                    count
+                );
+                closeModal();
+
+                await loadTables();
+            } catch (error) {
+                console.error(
+                    'Open table error:',
+                    error
+                );
+                Alert.alert(
+                    'เกิดข้อผิดพลาด',
+                    'ไม่สามารถเปิดโต๊ะได้'
+                );
+            }
     };
 
     const renderTable = ({ item }) => {
@@ -103,8 +198,11 @@ export default function TableScreen({ db, onBack }) {
 
     return (
         <View style={styles.tableRoot}>
-            <View style={[ styles.tableHeader , { backgroundColor: colors.primary}]}>
-                <Text style={styles.tableHeaderTitle}> จัดการโต๊ะ </Text>
+            <View style={[ styles.tableHeader, {backgroundColor: colors.primary}]}>
+                <Text style={styles.tableHeaderTitle}>
+                    {mode === 'select' ? 'กรุณาเลือกโต๊ะ' : 'จัดการโต๊ะ'}
+                </Text>
+
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={onBack}
@@ -113,17 +211,94 @@ export default function TableScreen({ db, onBack }) {
                 </TouchableOpacity>
             </View>
 
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: '#fff',
+                marginHorizontal: 35,
+                marginTop: 15,
+                marginBottom: 5,
+                paddingHorizontal: 12,
+                borderWidth: 1,
+                borderColor: '#aaa',
+                borderRadius: 8,
+                height: 42,
+            }}>
+                <TextInput
+                    style={{ flex: 1, fontSize: 16, color: '#333' }}
+                    placeholder="ค้นหาเลขโต๊ะ..."
+                    placeholderTextColor="#888"
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    keyboardType="default"
+                />
+                {searchText !== '' && (
+                    <TouchableOpacity onPress={() => setSearchText('')}>
+                        <Text style={{ color: '#888', fontSize: 14 }}>✕ ล้าง</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
             <View style={styles.tableContent}>
                 <FlatList
-                    data={tables}
+                    data={filteredTables}
                     keyExtractor={item => String(item.table_id)}
                     renderItem={renderTable}
                     numColumns={4}
                     columnWrapperStyle={styles.tableRow}
                     contentContainerStyle={styles.tableList}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <Text style={{ textAlign: 'center', marginTop: 40, color: '#888', fontSize: 16 }}>
+                            ไม่พบโต๊ะที่ค้นหา
+                        </Text>
+                    }
                 />
             </View>
+
+            <Modal
+                visible={modalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={closeModal}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.openTableModal}>
+                        <Text style={styles.modalTitle}>เปิดโต๊ะ{' '}{selectedTable?.table_number}</Text>
+
+                        <Text style={styles.modalDescription}>รองรับสูงสุด{' '}{selectedTable?.capacity}{' '}คน</Text>
+
+                        <Text style={styles.modalLabel}>จำนวนลูกค้า</Text>
+
+                        <TextInput
+                            style={styles.customerInput}
+                            value={customerCount}
+                            onChangeText={setCustomerCount}
+                            placeholder="กรอกจำนวนลูกค้า"
+                            placeholderTextColor={colors.dim}
+                            keyboardType="number-pad"
+                            maxLength={2}
+                            autoFocus
+                        />
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.modalCancelButton}
+                                onPress={closeModal}
+                            >
+                                <Text style={styles.modalCancelText}>ยกเลิก</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.modalConfirmButton}
+                                onPress={handleOpenTable}
+                            >
+                                <Text style={styles.modalConfirmText}>เปิดโต๊ะ</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
