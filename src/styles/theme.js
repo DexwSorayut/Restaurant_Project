@@ -20,6 +20,7 @@ export const colors = {
     primary: '#2563EB',
     primaryDark: '#1D4ED8',
     primaryLight: '#EFF6FF',
+    indigo: '#6366F1',
 
     // Status
     green: '#16A34A',
@@ -35,7 +36,7 @@ export const colors = {
     yellow: '#CA8A04',
     yellowLight: '#FEFCE8',
 
-    purple: '#7C3AED',
+    purple: '#6366F1',
     purpleLight: '#F5F3FF',
 
     cyan: '#0891B2',
