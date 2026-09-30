@@ -151,6 +151,8 @@ function MainScreen({
     if (screen === 'summary') {
         return (
             <SummaryScreen
+                db={db}
+                table={selectedTable}
                 onBack={() => setScreen('cart')}
                 onOrderMore={() => setScreen('food')}
                 onPaid={() => {
