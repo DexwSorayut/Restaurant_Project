@@ -41,6 +41,13 @@ export default function TableScreen({
     const [selectedTable, setSelectedTable] = useState(null);
     const [customerCount, setCustomerCount] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
+    const [searchText, setSearchText] = useState('');
+
+    const filteredTables = searchText.trim() === ''
+        ? tables
+        : tables.filter(t =>
+            String(t.table_number).includes(searchText.trim())
+        );
 
     useEffect(() => {
         loadTables();
@@ -189,10 +196,12 @@ export default function TableScreen({
         );
     };
 
-        return (
+    return (
         <View style={styles.tableRoot}>
             <View style={[ styles.tableHeader, {backgroundColor: colors.primary}]}>
-                <Text style={styles.tableHeaderTitle}>กรุณาเลือกโต๊ะ</Text>
+                <Text style={styles.tableHeaderTitle}>
+                    {mode === 'select' ? 'กรุณาเลือกโต๊ะ' : 'จัดการโต๊ะ'}
+                </Text>
 
                 <TouchableOpacity
                     style={styles.backButton}
@@ -202,15 +211,48 @@ export default function TableScreen({
                 </TouchableOpacity>
             </View>
 
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: '#fff',
+                marginHorizontal: 35,
+                marginTop: 15,
+                marginBottom: 5,
+                paddingHorizontal: 12,
+                borderWidth: 1,
+                borderColor: '#aaa',
+                borderRadius: 8,
+                height: 42,
+            }}>
+                <TextInput
+                    style={{ flex: 1, fontSize: 16, color: '#333' }}
+                    placeholder="ค้นหาเลขโต๊ะ..."
+                    placeholderTextColor="#888"
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    keyboardType="default"
+                />
+                {searchText !== '' && (
+                    <TouchableOpacity onPress={() => setSearchText('')}>
+                        <Text style={{ color: '#888', fontSize: 14 }}>✕ ล้าง</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
             <View style={styles.tableContent}>
                 <FlatList
-                    data={tables}
+                    data={filteredTables}
                     keyExtractor={item => String(item.table_id)}
                     renderItem={renderTable}
                     numColumns={4}
                     columnWrapperStyle={styles.tableRow}
                     contentContainerStyle={styles.tableList}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <Text style={{ textAlign: 'center', marginTop: 40, color: '#888', fontSize: 16 }}>
+                            ไม่พบโต๊ะที่ค้นหา
+                        </Text>
+                    }
                 />
             </View>
 
