@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Image, TextInput, Modal } from 'react-native';
 import { listCategories, listFoods } from '../../db/database';
 import { styles } from '../../styles/foodsScreenStyles';
 import { colors } from '../../styles/theme';
