@@ -58,12 +58,7 @@ const FOODS = [
 const TABLE_COUNT = 15;
 
 
-/**
- * Seed ข้อมูลเริ่มต้น
- *
- * ทำงานเฉพาะกรณีที่ยังไม่มี category
- * ดังนั้นเปิด App ครั้งต่อไปจะไม่เพิ่มข้อมูลซ้ำ
- */
+/** Seed ข้อมูลเริ่มต้น */
 export async function seedDatabase(db) {
 
     const result = await db.getFirstAsync(`
@@ -185,19 +180,7 @@ export async function seedDatabase(db) {
 }
 
 
-/**
- * Reset ข้อมูลการขาย
- *
- * ลบเฉพาะ:
- * - order_items
- * - order_rounds
- * - bills
- *
- * ไม่ลบ:
- * - categories
- * - foods
- * - tables
- */
+/** Reset ข้อมูลการขาย */
 export async function resetSalesData(db) {
 
     await db.withTransactionAsync(async () => {

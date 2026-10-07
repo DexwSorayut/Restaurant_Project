@@ -6,7 +6,7 @@ import { styles } from './src/styles/appStyles';
 import { colors } from './src/styles/theme';
 import TableScreen from './src/screen/table/TableScreen';
 import DetailScreen from './src/screen/table/DetailScreen';
-import FoodScreen from './src/screen/foods/FoodScreen';
+import FoodScreen from './src/screen/foods/foodScreen';
 import AddItemScreen from './src/screen/addItem/AddItemScreen';
 import CartScreen from './src/screen/addItem/CartScreen';
 import SummaryScreen from './src/screen/addItem/SummaryScreen';
