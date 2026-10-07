@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
         paddingTop: topInset + 12,
         paddingBottom: 16,
         paddingLeft: 20,
-        paddingRight: 80,                // เว้นที่ให้ปุ่มเฟือง
+        paddingHorizontal: 30,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -33,13 +33,14 @@ export const styles = StyleSheet.create({
         marginLeft: 10,
     },
     backButton: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
         borderRadius: 8,
-        backgroundColor: 'rgba(255,255,255,0.25)',
+        backgroundColor: colors.primaryLight,
     },
     backButtonText: {
-        color: '#fff',
+        color: colors.primary,
+        fontSize: 16,
         fontWeight: '600',
     },
 

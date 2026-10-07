@@ -1,0 +1,32 @@
+import { StyleSheet } from 'react-native';
+import { colors } from './theme';
+
+export const s = StyleSheet.create({
+    root: { flex: 1, backgroundColor: '#F3F4F6' },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: colors.primary },
+    headerTitle: { color: '#fff', fontSize: 20, fontWeight: '700' },
+    backBtn: { backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+    backText: { fontWeight: '600', color: colors.primary },
+    content: { padding: 16, gap: 12 },
+    empty: { textAlign: 'center', color: '#6B7280', marginTop: 40, fontSize: 16 },
+    card: { backgroundColor: '#fff', borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
+    itemName: { fontSize: 15, fontWeight: '600' },
+    itemText: { fontSize: 14 },
+    note: { color: '#6B7280', fontSize: 13 },
+    qtyBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' },
+    qtyText: { fontSize: 18, fontWeight: '700' },
+    qtyNum: { minWidth: 24, textAlign: 'center', fontSize: 16 },
+    footer: { padding: 16, backgroundColor: '#fff', gap: 10 },
+    total: { fontSize: 18, fontWeight: '700' },
+    footerRow: { flexDirection: 'row', gap: 12 },
+    btn: { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center', backgroundColor: colors.primary },
+    btnLight: { backgroundColor: '#EFF6FF' },
+    btnOrder: { backgroundColor: '#F59E0B' },
+    btnPay: { backgroundColor: '#10B981' },
+    btnGray: { backgroundColor: '#E5E7EB' },
+    btnDanger: { backgroundColor: '#EF4444' },
+    btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+    modalCard: { backgroundColor: '#fff', borderRadius: 12, padding: 20, width: '60%', gap: 16 },
+    modalText: { fontSize: 16, textAlign: 'center' },
+});
