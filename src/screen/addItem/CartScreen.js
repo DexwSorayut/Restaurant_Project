@@ -82,7 +82,7 @@ export default function CartScreen({ onBack, onGoSummary }) {
                     )}
                     {hasAnything && (
                         <TouchableOpacity style={[s.btn, s.btnPay]} onPress={onGoSummary}>
-                            <Text style={s.btnText}>สรุปยอด / ชำระเงิน</Text>
+                            <Text style={s.btnText}>รายการทั้งหมด</Text>
                         </TouchableOpacity>
                     )}
                 </View>

@@ -1,13 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useCart, itemUnitPrice, itemTotal } from '../../context/CartContext';
-import { listCategories, listFoods } from '../../db/database';
+import { listCategories, listFoods, getBillDetails } from '../../db/database';
 import { colors } from '../../styles/theme';
 import { s } from '../../styles/SummaryScreenStyles';
 
-const fmt = satang => `${(satang / 100).toFixed(2)} บาท`;
+const fmt = satang => `${(Number(satang) / 100).toFixed(2)} บาท`;
 
-function Round({ title, items, subtotal }) {
+// รวมยอดของรอบ โดยไม่นับรายการที่ถูกยกเลิก
+const dbRoundTotal = items =>
+    items.reduce((sum, it) => (it.status === 'CANCELLED' ? sum : sum + Number(it.item_total)), 0);
+
+// การ์ดแสดงรอบที่สั่งไปแล้ว (ข้อมูลจาก SQLite เหมือนหน้า DetailScreen)
+function DbRound({ title, items }) {
+    return (
+        <View style={s.card}>
+            <Text style={s.roundTitle}>{title}</Text>
+            {items.map(it => {
+                const cancelled = it.status === 'CANCELLED';
+                // รายการที่ยกเลิก แสดงเป็นตัวจาง + ขีดฆ่า
+                const cancelStyle = cancelled
+                    ? { color: '#9CA3AF', textDecorationLine: 'line-through' }
+                    : null;
+                return (
+                    <View key={it.item_id} style={{ marginBottom: 6 }}>
+                        <Text style={[s.itemName, cancelStyle]}>
+                            {it.food_name} x{it.quantity}
+                        </Text>
+                        {it.note ? <Text style={s.note}>หมายเหตุ: {it.note}</Text> : null}
+                        <Text style={[s.itemText, cancelStyle]}>
+                            {fmt(it.unit_price)} x {it.quantity} = {fmt(it.item_total)}
+                        </Text>
+                        {cancelled ? <Text style={{ color: '#EF4444', fontSize: 12 }}>ยกเลิก</Text> : null}
+                    </View>
+                );
+            })}
+            <Text style={s.subtotal}>รวม {fmt(dbRoundTotal(items))}</Text>
+        </View>
+    );
+}
+
+// การ์ดแสดงของในตะกร้าที่ยังไม่กดสั่ง (ยังใช้ข้อมูลจาก CartContext เหมือนเดิม)
+function CartRound({ title, items, subtotal }) {
     return (
         <View style={s.card}>
             <Text style={s.roundTitle}>{title}</Text>
@@ -29,12 +63,20 @@ function Round({ title, items, subtotal }) {
 }
 
 export default function SummaryScreen({ db, table, onBack, onOrderMore, onPaid }) {
-    const { cart, sealedRounds, payNow, grandTotal, roundSubtotal } = useCart();
+    // sealedRounds ไม่ใช้แสดงผลแล้ว เก็บไว้แค่เป็นสัญญาณว่ามีการกดสั่งรอบใหม่ จะได้โหลด DB ใหม่
+    const { cart, sealedRounds, payNow, roundSubtotal } = useCart();
     const [searchText, setSearchText] = useState('');
     const [categories, setCategories] = useState([]);
-    const [foodCategoryMap, setFoodCategoryMap] = useState({});
+    const [foodCategoryMap, setFoodCategoryMap] = useState({});     // food_id -> category_id
+    const [foodNameCategoryMap, setFoodNameCategoryMap] = useState({}); // food_name -> category_id (สำรอง)
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
 
+    // ข้อมูลบิลจาก SQLite (ไม่หายตอนรีแอป)
+    const [billItems, setBillItems] = useState([]);
+    const [billTotal, setBillTotal] = useState(0);
+    const [loading, setLoading] = useState(true);
+
+    // โหลดหมวดหมู่และเมนู เพื่อใช้กรองตามหมวด
     useEffect(() => {
         if (!db) return;
         (async () => {
@@ -42,16 +84,41 @@ export default function SummaryScreen({ db, table, onBack, onOrderMore, onPaid }
                 const cats = await listCategories(db);
                 setCategories(cats || []);
                 const foods = await listFoods(db);
-                const map = {};
+                const byId = {};
+                const byName = {};
                 for (const f of foods) {
-                    map[f.food_id] = f.category_id;
+                    byId[f.food_id] = f.category_id;
+                    byName[f.food_name] = f.category_id;
                 }
-                setFoodCategoryMap(map);
+                setFoodCategoryMap(byId);
+                setFoodNameCategoryMap(byName);
             } catch (e) {
                 console.error(e);
             }
         })();
     }, [db]);
+
+    // โหลดรายการทุกรอบของบิลจาก DB (ใช้ฟังก์ชันเดียวกับหน้า DetailScreen)
+    const loadBill = useCallback(async () => {
+        if (!db || !table?.bill_id) {
+            setLoading(false);
+            return;
+        }
+        try {
+            const result = await getBillDetails(db, table.bill_id);
+            setBillItems(result.items || []);
+            setBillTotal(result.billTotal || 0);
+        } catch (e) {
+            console.error('Load bill error:', e);
+        } finally {
+            setLoading(false);
+        }
+    }, [db, table?.bill_id]);
+
+    // โหลดตอนเปิดหน้า และโหลดใหม่ทุกครั้งที่มีการกดสั่งรอบใหม่
+    useEffect(() => {
+        loadBill();
+    }, [loadBill, sealedRounds.length]);
 
     const handlePay = async () => {
         try {
@@ -64,33 +131,51 @@ export default function SummaryScreen({ db, table, onBack, onOrderMore, onPaid }
         }
     };
 
-    const getCategoryId = it =>
+    // หาหมวดของรายการในตะกร้า (ข้อมูลจาก context)
+    const getCartCategoryId = it =>
         it.food?.category_id || foodCategoryMap[it.food?.food_id] || null;
 
-    const filterByCategory = items => {
+    // หาหมวดของรายการจาก DB: ลองจาก food_id ก่อน ถ้าไม่มีค่อยใช้ชื่อเมนู
+    const getDbCategoryId = it =>
+        it.category_id || foodCategoryMap[it.food_id] || foodNameCategoryMap[it.food_name] || null;
+
+    const filterBy = (items, getCat) => {
         if (selectedCategoryId === null) return items;
-        return items.filter(it => getCategoryId(it) === selectedCategoryId);
+        return items.filter(it => getCat(it) === selectedCategoryId);
     };
+
+    // จัดกลุ่มรายการจาก DB ตามรอบ (เหมือน DetailScreen)
+    const roundList = Object.values(
+        billItems.reduce((groups, it) => {
+            if (!groups[it.round_id]) {
+                groups[it.round_id] = {
+                    round_id: it.round_id,
+                    round_number: it.round_number,
+                    items: [],
+                };
+            }
+            groups[it.round_id].items.push(it);
+            return groups;
+        }, {})
+    ).sort((a, b) => a.round_number - b.round_number);
 
     const keyword = searchText.trim().toLowerCase();
 
-    const filteredSealedRounds = sealedRounds
+    // กรองตามคำค้น (เลขรอบ) และหมวดหมู่
+    const filteredRounds = roundList
         .filter(r => {
             if (!keyword) return true;
             return (
-                String(r.roundNumber) === keyword ||
-                `รอบที่ ${r.roundNumber}`.toLowerCase().includes(keyword)
+                String(r.round_number) === keyword ||
+                `รอบที่ ${r.round_number}`.toLowerCase().includes(keyword)
             );
         })
-        .map(r => ({
-            ...r,
-            items: filterByCategory(r.items),
-        }))
+        .map(r => ({ ...r, items: filterBy(r.items, getDbCategoryId) }))
         .filter(r => r.items.length > 0);
 
-    const filteredCart = filterByCategory(keyword === '' ? cart : []);
+    const filteredCart = filterBy(keyword === '' ? cart : [], getCartCategoryId);
 
-    const hasAnyResults = filteredSealedRounds.length > 0 || filteredCart.length > 0;
+    const hasAnyResults = filteredRounds.length > 0 || filteredCart.length > 0;
 
     return (
         <View style={s.root}>
@@ -188,42 +273,42 @@ export default function SummaryScreen({ db, table, onBack, onOrderMore, onPaid }
                     })}
                 </ScrollView>
 
-                {filteredSealedRounds.map(r => (
-                    <Round
-                        key={r.id}
-                        title={`รอบที่ ${r.roundNumber} (สั่งแล้ว)`}
-                        items={r.items}
-                        subtotal={roundSubtotal(r.items)}
-                    />
-                ))}
+                {/* ระหว่างโหลดข้อมูลจาก DB */}
+                {loading ? (
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 30 }} />
+                ) : (
+                    <>
+                        {filteredRounds.map(r => (
+                            <DbRound
+                                key={r.round_id}
+                                title={`รอบที่ ${r.round_number} (สั่งแล้ว)`}
+                                items={r.items}
+                            />
+                        ))}
 
-                {filteredCart.length > 0 && (
-                    <Round
-                        title="ยังไม่ได้กดสั่ง (ในตะกร้า)"
-                        items={filteredCart}
-                        subtotal={roundSubtotal(filteredCart)}
-                    />
-                )}
+                        {filteredCart.length > 0 && (
+                            <CartRound
+                                title="ยังไม่ได้กดสั่ง (ในตะกร้า)"
+                                items={filteredCart}
+                                subtotal={roundSubtotal(filteredCart)}
+                            />
+                        )}
 
-                {!hasAnyResults && (
-                    <Text style={s.empty}>
-                        {keyword ? 'ไม่พบรอบที่ค้นหา' : 'ไม่พบรายการอาหารในหมวดหมู่นี้'}
-                    </Text>
+                        {!hasAnyResults && (
+                            <Text style={s.empty}>
+                                {keyword ? 'ไม่พบรอบที่ค้นหา' : 'ไม่พบรายการอาหารในหมวดหมู่นี้'}
+                            </Text>
+                        )}
+                    </>
                 )}
             </ScrollView>
 
             <View style={s.footer}>
-                <Text style={s.total}>ยอดรวมทุกรอบ {fmt(grandTotal)}</Text>
+                {/* ยอดรวมจาก DB ตรงกับหน้ารายละเอียดบิล (ไม่รวมรายการที่ยกเลิก) */}
+                <Text style={s.total}>ยอดรวมทุกรอบ {fmt(billTotal)}</Text>
                 <View style={s.footerRow}>
                     <TouchableOpacity style={[s.btn, s.btnMore]} onPress={onOrderMore}>
                         <Text style={s.btnText}>สั่งอาหารเพิ่ม</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[s.btn, s.btnPay, grandTotal === 0 && { opacity: 0.4 }]}
-                        disabled={grandTotal === 0}
-                        onPress={handlePay}
-                    >
-                        <Text style={s.btnText}>ชำระเงิน</Text>
                     </TouchableOpacity>
                 </View>
             </View>

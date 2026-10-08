@@ -61,7 +61,7 @@ function formatTime(text) {
     return `${hours}:${minutes} น.`;
 }
 
-function groupByRound(items) {
+function groupByRound(items) { //ส่งจานมา รวมเป็นรอบบิลเดียวกัน
     const map = new Map();
     for (const item of items) {
         if (!map.has(item.round_id)) {

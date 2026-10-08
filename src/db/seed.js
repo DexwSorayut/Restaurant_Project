@@ -11,7 +11,7 @@ const FOODS = [
     // =========================================
     // อาหารจานเดียว
     // =========================================
-    ['ข้าวกะเพราไก่', 'อาหารจานเดียว', 6500 , 'ข้าวกระเพราไก่.jpg'],
+    ['ข้าวกะเพราไก่', 'อาหารจานเดียว', 6000 , 'ข้าวกระเพราไก่.jpg'],
     ['ข้าวกะเพราหมู', 'อาหารจานเดียว', 6500, 'ข้าวกะเพราหมู.jpg'],
     ['ข้าวผัดไก่', 'อาหารจานเดียว', 6000, 'ข้าวผัดไก่.jpg'],
     ['ข้าวผัดหมู', 'อาหารจานเดียว', 6000, 'ข้าวผัดหมู.jpg'],
@@ -58,7 +58,12 @@ const FOODS = [
 const TABLE_COUNT = 15;
 
 
-/** Seed ข้อมูลเริ่มต้น */
+/**
+ * Seed ข้อมูลเริ่มต้น
+ *
+ * ทำงานเฉพาะกรณีที่ยังไม่มี category
+ * ดังนั้นเปิด App ครั้งต่อไปจะไม่เพิ่มข้อมูลซ้ำ
+ */
 export async function seedDatabase(db) {
 
     const result = await db.getFirstAsync(`
@@ -180,7 +185,19 @@ export async function seedDatabase(db) {
 }
 
 
-/** Reset ข้อมูลการขาย */
+/**
+ * Reset ข้อมูลการขาย
+ *
+ * ลบเฉพาะ:
+ * - order_items
+ * - order_rounds
+ * - bills
+ *
+ * ไม่ลบ:
+ * - categories
+ * - foods
+ * - tables
+ */
 export async function resetSalesData(db) {
 
     await db.withTransactionAsync(async () => {
@@ -208,12 +225,27 @@ export async function resetSalesData(db) {
     });
 }
 
-export async function syncFoodImages(db) {
-    for (const [foodName, , , image] of FOODS) {
-        if (!image) continue;
-        await db.runAsync(
-            `UPDATE foods SET image = ? WHERE food_name = ?`,
-            [image, foodName]
-        );
-    }
+/**
+ * อัปเดตราคาและรูปของเมนูให้ตรงกับ FOODS ด้านบน
+ *
+ * เรียกทุกครั้งที่เปิดแอป แก้ราคาใน seed แล้วรีแอป ราคาก็เปลี่ยนตาม
+ * บิลเก่าไม่กระทบ เพราะบิลใช้ราคาที่จดไว้ใน order_items.unit_price
+ */
+export async function syncFoodData(db) {
+    await db.withTransactionAsync(async () => {
+        for (const [foodName, , price, image] of FOODS) {
+            await db.runAsync(
+                `
+                UPDATE foods
+                SET price = ?,
+                    image = COALESCE(?, image)   -- ถ้าไม่ได้ใส่รูป ใช้รูปเดิม
+                WHERE food_name = ?
+                `,
+                [price, image || null, foodName]
+            );
+        }
+    });
 }
+
+// เก็บชื่อเดิมไว้ เผื่อมีไฟล์อื่น (เช่น App.js) เรียกใช้อยู่ จะได้ไม่พัง
+export const syncFoodImages = syncFoodData;
