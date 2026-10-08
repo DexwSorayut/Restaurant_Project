@@ -118,14 +118,7 @@ CREATE TABLE IF NOT EXISTS payments (
         ON DELETE RESTRICT
 );
 
--- 7. Employee
-CREATE TABLE IF NOT EXISTS employees (
-    employee_id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    employee_name   TEXT NOT NULL,
-    pin             TEXT NOT NULL,
-    status          TEXT NOT NULL DEFAULT 'ACTIVE'
-                    CHECK (status IN ('ACTIVE', 'INACTIVE'))
-);
+
 
 -- INDEXES
 -- Find open bill of a table

@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import {
+    View,
+    Text,
+    ScrollView,
+    TouchableOpacity,
+} from 'react-native';
 
 import { listClosedBills, getClosedBillDetail } from '../../db/database';
 import { styles } from '../../styles/billStyleScreenStyle';

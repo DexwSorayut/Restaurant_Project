@@ -1,6 +1,6 @@
 import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
-import { seedDatabase } from './seed';
+import { seedDatabase, syncFoodData } from './seed';
 
 export const DATABASE_NAME = 'restaurant.db';
 
@@ -21,8 +21,9 @@ async function loadSchema() {
 /** เริ่มต้น Database */
 export async function initDB(db) {
     const schema = await loadSchema();
-    await db.execAsync(schema);
-    await seedDatabase(db);
+    await db.execAsync(schema);   // สร้างตารางที่ยังไม่มี
+    await seedDatabase(db);       // ใส่ข้อมูลเริ่มต้น (ทำแค่ครั้งแรก)
+    await syncFoodData(db);       // อัปเดตราคา/รูปเมนูให้ตรงกับ seed ทุกครั้งที่เปิดแอป
 }
 
 /** ตรวจสอบว่ามีข้อมูลเริ่มต้นแล้วหรือยัง */
