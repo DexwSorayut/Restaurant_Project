@@ -8,7 +8,7 @@ Group Name : Tam yang ngai
     สมาชิก 3: พิชชานันท์ อนาถ 6721651629 , หน้าที่ : เบื้องหลังระบบครัว การเรียกข้อมูล ออกแบบหลักการทำงานของหน้าต่างทุกหน้า ; 
 
 2. Link YouTube Presentation :
-
+    https://youtu.be/nHdUsOFGfN0
 
 3. Link Github Repositories :
     https://github.com/DexwSorayut/Restaurant_Project
